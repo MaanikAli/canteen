@@ -1,11 +1,36 @@
 import express from 'express';
 import Order from '../models/Order.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
+// Middleware to ensure database connection for serverless environments
+const ensureConnection = async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://sowad:sowad@cluster0.m7vh241.mongodb.net/greenCanteenDb?retryWrites=true&w=majority&appName=Cluster0';
+
+      await mongoose.connect(mongoUri, {
+        dbName: 'greenCanteenDb',
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        bufferCommands: false,
+        bufferMaxEntries: 0,
+        maxIdleTimeMS: 30000,
+        family: 4,
+      });
+    }
+    next();
+  } catch (error) {
+    console.error('Database connection error in orders route:', error);
+    res.status(500).json({ message: 'Database connection failed', error: error.message });
+  }
+};
+
 // Get all orders (authenticated users can see their own, admin/kitchen can see all)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, ensureConnection, async (req, res) => {
   try {
     let orders;
     if (req.user.role === 'admin' || req.user.role === 'kitchen') {

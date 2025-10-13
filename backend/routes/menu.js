@@ -1,15 +1,42 @@
 import express from 'express';
 import MenuItem from '../models/MenuItem.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
+// Middleware to ensure database connection for serverless environments
+const ensureConnection = async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      // For serverless environments, establish connection if needed
+      const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://sowad:sowad@cluster0.m7vh241.mongodb.net/greenCanteenDb?retryWrites=true&w=majority&appName=Cluster0';
+
+      await mongoose.connect(mongoUri, {
+        dbName: 'greenCanteenDb',
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        bufferCommands: false,
+        bufferMaxEntries: 0,
+        maxIdleTimeMS: 30000,
+        family: 4,
+      });
+    }
+    next();
+  } catch (error) {
+    console.error('Database connection error in menu route:', error);
+    res.status(500).json({ message: 'Database connection failed', error: error.message });
+  }
+};
+
 // Get all menu items
-router.get('/', async (req, res) => {
+router.get('/', ensureConnection, async (req, res) => {
   try {
     const menuItems = await MenuItem.find();
     res.json(menuItems);
   } catch (error) {
+    console.error('Error fetching menu items:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

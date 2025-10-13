@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://canteenbc.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 class ApiService {
   private token: string | null = null;

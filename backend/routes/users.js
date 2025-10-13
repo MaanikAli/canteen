@@ -3,11 +3,36 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
+// Middleware to ensure database connection for serverless environments
+const ensureConnection = async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://sowad:sowad@cluster0.m7vh241.mongodb.net/greenCanteenDb?retryWrites=true&w=majority&appName=Cluster0';
+
+      await mongoose.connect(mongoUri, {
+        dbName: 'greenCanteenDb',
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        bufferCommands: false,
+        bufferMaxEntries: 0,
+        maxIdleTimeMS: 30000,
+        family: 4,
+      });
+    }
+    next();
+  } catch (error) {
+    console.error('Database connection error in users route:', error);
+    res.status(500).json({ message: 'Database connection failed', error: error.message });
+  }
+};
+
 // Register new user
-router.post('/register', async (req, res) => {
+router.post('/register', ensureConnection, async (req, res) => {
   try {
     const { email, password, role, name, studentId } = req.body;
 

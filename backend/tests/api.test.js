@@ -6,9 +6,15 @@ let token;
 
 beforeAll(async () => {
   // Connect to test database
-  await mongoose.connect(process.env.MONGO_URI_TEST || 'mongodb://localhost:27017/canteen_test', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+  const testUri = process.env.MONGO_URI_TEST || 'mongodb+srv://sowad:sowad@cluster0.m7vh241.mongodb.net/greenCanteenTest?retryWrites=true&w=majority&appName=Cluster0';
+  await mongoose.connect(testUri, {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    bufferCommands: false,
+    bufferMaxEntries: 0,
+    maxIdleTimeMS: 30000,
+    family: 4,
   });
 
   // Register an admin user
