@@ -17,10 +17,25 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onAddToCart }) => (
       </div>
       <p className="text-gray-600 text-sm mb-4 flex-grow">{item.description}</p>
       <div className="flex justify-between items-center mt-auto">
-        <span className="text-lg font-bold text-primary">৳{item.price.toFixed(2)}</span>
+        <div className="flex flex-col">
+          {item.discountPercent && item.discountPercent > 0 ? (
+            <>
+              <span className="text-lg font-bold text-primary">৳{(item.price - (item.price * (item.discountPercent / 100))).toFixed(2)}</span>
+              <span className="text-sm text-gray-400 line-through">৳{item.price.toFixed(2)}</span>
+            </>
+          ) : (
+            <span className="text-lg font-bold text-primary">৳{item.price.toFixed(2)}</span>
+          )}
+          <span className="text-xs text-gray-500">Stock: {item.stockQuantity || 0}</span>
+        </div>
         <button
           onClick={() => onAddToCart(item)}
-          className="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-colors duration-300 flex items-center gap-1"
+          disabled={(item.stockQuantity || 0) <= 0}
+          className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-300 flex items-center gap-1 ${
+            (item.stockQuantity || 0) <= 0
+              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              : 'bg-primary text-white hover:bg-primary-dark'
+          }`}
           aria-label={`Add ${item.name} to cart`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

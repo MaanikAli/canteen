@@ -60,13 +60,13 @@ const StudentHomePage: React.FC<{
   menu: MenuItem[];
 }> = ({ onAddToCart, menu }) => {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
-  
+
   return (
     <>
       <main>
         <Hero />
         <Menu onAddToCart={onAddToCart} menu={menu} />
-        <SpecialOffers menu={menu} />
+        <SpecialOffers menu={menu} onAddToCart={onAddToCart} />
         <About />
       </main>
       <Footer />
@@ -145,7 +145,10 @@ const App: React.FC = () => {
     }
   };
   
-  const totalPrice = useMemo(() => cartItems.reduce((total, item) => total + item.price * item.quantity, 0), [cartItems]);
+  const totalPrice = useMemo(() => cartItems.reduce((total, item) => {
+    const discountedPrice = item.discountPercent && item.discountPercent > 0 ? item.price - (item.price * (item.discountPercent / 100)) : item.price;
+    return total + discountedPrice * item.quantity;
+  }, 0), [cartItems]);
 
   const handleCheckout = () => {
     if (!currentUser) {

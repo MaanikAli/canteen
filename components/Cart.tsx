@@ -38,14 +38,14 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantit
                   <img src={item.imageUrl} alt={item.name} className="w-16 h-16 rounded-md object-cover"/>
                   <div className="flex-1">
                     <h3 className="font-semibold">{item.name}</h3>
-                    <p className="text-sm text-gray-500">৳{item.price.toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">৳{(item.discountPercent && item.discountPercent > 0 ? item.price - (item.price * (item.discountPercent / 100)) : item.price).toFixed(2)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => onUpdateQuantity(item.id, item.quantity - 1)} className="w-6 h-6 border rounded-full hover:bg-gray-100">-</button>
                     <span>{item.quantity}</span>
                     <button onClick={() => onUpdateQuantity(item.id, item.quantity + 1)} className="w-6 h-6 border rounded-full hover:bg-gray-100">+</button>
                   </div>
-                  <p className="font-semibold w-20 text-right">৳{(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="font-semibold w-20 text-right">৳{((item.discountPercent && item.discountPercent > 0 ? item.price - (item.price * (item.discountPercent / 100)) : item.price) * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>
