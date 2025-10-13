@@ -19,7 +19,6 @@ const ensureConnection = async (req, res, next) => {
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
         bufferCommands: false,
-        bufferMaxEntries: 0,
         maxIdleTimeMS: 30000,
         family: 4,
       });
