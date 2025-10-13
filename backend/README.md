@@ -101,12 +101,12 @@ You can test the API using tools like Postman or curl:
 
 ```bash
 # Health check
-curl http://localhost:5000/api/health
+curl https://canteenbc.vercel.app/api/health
 
 # Get menu
-curl http://localhost:5000/api/menu
+curl https://canteenbc.vercel.app/api/menu
 
 # Register user
-curl -X POST http://localhost:5000/api/users/register \
+curl -X POST https://canteenbc.vercel.app/api/users/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password","role":"student","name":"Test User","studentId":"12345"}'
