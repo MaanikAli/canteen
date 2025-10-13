@@ -64,3 +64,4 @@
 - [x] Update navigation bar to show Menu/Offers links for all logged-in users
 - [x] Enable cart functionality for all authenticated users (Admin, Kitchen, Faculty, Others, Student)
 - [x] Fix type compatibility issues (userId as string, itemId as string)
+- [x] Fix cart close button visibility - only show when cart is open
