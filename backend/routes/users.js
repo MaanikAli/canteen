@@ -11,24 +11,23 @@ router.post('/register', async (req, res) => {
   try {
     const { email, password, role, name, studentId } = req.body;
 
-    // Temporarily allow public registration for all roles for testing
-    // TODO: Re-enable auth for non-student roles after initial setup
-    // if (role !== 'student') {
-    //   const authHeader = req.headers.authorization;
-    //   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    //     return res.status(403).json({ message: 'Access token required' });
-    //   }
-    //   const token = authHeader.substring(7);
-    //   try {
-    //     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    //     if (decoded.role !== 'admin') {
-    //       return res.status(403).json({ message: 'Admin access required' });
-    //     }
-    //   } catch (err) {
-    //     return res.status(403).json({ message: 'Invalid token' });
-    //   }
-    // }
-    // For all roles, no auth required temporarily
+    // Allow public registration for all roles - students, faculty, others can register freely
+    // Only admin and kitchen staff creation should be restricted to admin users
+    if (role === 'admin' || role === 'kitchen') {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(403).json({ message: 'Access token required for admin/kitchen registration' });
+      }
+      const token = authHeader.substring(7);
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        if (decoded.role !== 'admin') {
+          return res.status(403).json({ message: 'Admin access required for creating admin/kitchen accounts' });
+        }
+      } catch (err) {
+        return res.status(403).json({ message: 'Invalid token' });
+      }
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });

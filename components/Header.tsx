@@ -30,7 +30,7 @@ const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, cu
           {currentUser?.role === UserRole.Admin && <button onClick={() => onNavigate('admin')} className="text-gray-600 hover:text-primary transition duration-300">Admin Panel</button>}
           {currentUser?.role === UserRole.Kitchen && <button onClick={() => onNavigate('kitchen')} className="text-gray-600 hover:text-primary transition duration-300">Kitchen View</button>}
           
-          {(!currentUser || currentUser.role === UserRole.Student) && (
+          {currentUser && (
             <>
               <a href="#menu" className="text-gray-600 hover:text-primary transition duration-300">Menu</a>
               <a href="#offers" className="text-gray-600 hover:text-primary transition duration-300">Offers</a>
@@ -49,16 +49,14 @@ const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, cu
              </div>
           )}
 
-          {(!currentUser || currentUser.role === UserRole.Student) && (
+          {currentUser && cartCount > 0 && (
             <button onClick={onCartClick} className="relative text-gray-600 hover:text-primary transition duration-300" aria-label={`Open cart with ${cartCount} items`}>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-secondary text-gray-900 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
-                  {cartCount}
-                </span>
-              )}
+              <span className="absolute -top-2 -right-2 bg-secondary text-gray-900 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                {cartCount}
+              </span>
             </button>
           )}
 

@@ -1,5 +1,7 @@
 export enum UserRole {
   Student = "student",
+  Faculty = "faculty",
+  Others = "others",
   Kitchen = "kitchen",
   Admin = "admin",
 }
@@ -46,7 +48,7 @@ export interface CartItem extends MenuItem {
 
 export interface Order {
   id: string;
-  userId: number;
+  userId: string;
   userName: string;
   items: CartItem[];
   totalPrice: number;

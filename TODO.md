@@ -36,6 +36,31 @@
 - [x] Add code to drop the old 'test' database after establishing connection
 - [x] Run backend server to verify connection and database drop
 - [x] Test API endpoints to ensure operations work in the new database
-- [x] Update types.ts to match MongoDB schema (id as string, add _id, stockQuantity, discountPercent)
-- [x] Update apiService.ts to handle MongoDB _id mapping
-- [x] Update AdminDashboard.tsx to use string ids and handle MongoDB responses
+
+## User Account System Update
+- [x] Update User model to support Student, Faculty, and Others roles
+- [x] Update SignUpPage to include role selector and conditional studentId field
+- [x] Update AdminDashboard to display role badges for Faculty and Others
+- [x] Test registration for all role types (Student, Faculty, Others)
+
+## Menu Management Fixes
+- [x] Fix createMenuItem to exclude id field from POST requests
+- [x] Test menu CRUD operations (Create, Read, Update, Delete)
+
+## Order Management Fixes
+- [x] Fix order creation to include userId and userName from JWT token
+- [x] Test order placement and retrieval
+
+## User Registration Updates
+- [x] Update SignUpPage with stylish horizontal radio buttons for account types
+- [x] Remove Admin and Kitchen options from signup page - only show Student, Faculty, Others
+- [x] Redesign SignUpPage with modern, complex UI including gradient background, icons, enhanced styling, and improved user experience
+- [x] Redesign LoginPage with modern, complex UI matching the signup page design
+- [x] Allow all user types (Student, Faculty, Others, Admin, Kitchen) to register publicly except Admin/Kitchen which require admin auth
+- [x] Enable ordering functionality for all authenticated users including Admin and Kitchen staff
+
+## Universal Buying Capability
+- [x] Remove role restrictions for checkout - all authenticated users can place orders
+- [x] Update navigation bar to show Menu/Offers links for all logged-in users
+- [x] Enable cart functionality for all authenticated users (Admin, Kitchen, Faculty, Others, Student)
+- [x] Fix type compatibility issues (userId as string, itemId as string)

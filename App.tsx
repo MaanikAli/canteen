@@ -133,7 +133,7 @@ const App: React.FC = () => {
     setIsCartOpen(true);
   };
 
-  const handleUpdateQuantity = (itemId: number, newQuantity: number) => {
+  const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
     } else {
@@ -148,8 +148,8 @@ const App: React.FC = () => {
   const totalPrice = useMemo(() => cartItems.reduce((total, item) => total + item.price * item.quantity, 0), [cartItems]);
 
   const handleCheckout = () => {
-    if (!currentUser || currentUser.role !== UserRole.Student) {
-        alert("Please sign in as a student to place an order.");
+    if (!currentUser) {
+        alert("Please sign in to place an order.");
         setCurrentPage('login');
         return;
     }
@@ -176,7 +176,7 @@ const App: React.FC = () => {
 
     const newOrder: Order = {
       id: `ORD-${Date.now()}`,
-      userId: currentUser.id,
+      userId: currentUser.id.toString(),
       userName: currentUser.name,
       items: pendingOrder.items,
       totalPrice: pendingOrder.total,
@@ -229,9 +229,9 @@ const App: React.FC = () => {
       
       {renderPage()}
       
-      {(!currentUser || currentUser.role === UserRole.Student) && (
-         <Cart 
-            isOpen={isCartOpen} 
+      {currentUser && (
+         <Cart
+            isOpen={isCartOpen}
             onClose={() => setIsCartOpen(false)}
             cartItems={cartItems}
             onUpdateQuantity={handleUpdateQuantity}

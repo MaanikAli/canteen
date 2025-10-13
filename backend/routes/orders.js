@@ -32,10 +32,15 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'kitchen']), async (
   }
 });
 
-// Create new order (authenticated users)
+// Create new order (all authenticated users including admin and kitchen)
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const order = new Order(req.body);
+    const orderData = {
+      ...req.body,
+      userId: req.user.userId,
+      userName: req.user.name
+    };
+    const order = new Order(orderData);
     await order.save();
     res.status(201).json(order);
   } catch (error) {
