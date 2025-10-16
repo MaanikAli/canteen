@@ -61,9 +61,30 @@ router.post('/', authenticateToken, async (req, res) => {
   try {
     // Fetch user to get name
     const User = (await import('../models/User.js')).default;
+    const MenuItem = (await import('../models/MenuItem.js')).default;
+
     const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check stock availability and update stock
+    for (const item of req.body.items) {
+      const menuItem = await MenuItem.findById(item.menuItemId);
+      if (!menuItem) {
+        return res.status(404).json({ message: `Menu item ${item.name} not found` });
+      }
+      if (menuItem.stockQuantity < item.quantity) {
+        return res.status(400).json({ message: `Insufficient stock for ${item.name}. Available: ${menuItem.stockQuantity}, Requested: ${item.quantity}` });
+      }
+    }
+
+    // Deduct stock quantities
+    for (const item of req.body.items) {
+      await MenuItem.findByIdAndUpdate(
+        item.menuItemId,
+        { $inc: { stockQuantity: -item.quantity } }
+      );
     }
 
     const orderData = {
