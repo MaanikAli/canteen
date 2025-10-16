@@ -14,25 +14,39 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders, onOrderDeleted }) =
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handleDeleteOrder = async (orderId: string) => {
-    if (window.confirm('Are you sure you want to delete this completed order? This action cannot be undone.')) {
-      setDeletingOrderId(orderId);
-      try {
-        await apiService.deleteOrder(orderId);
-        if (onOrderDeleted) {
-          onOrderDeleted();
-        }
-      } catch (error) {
-        console.error('Failed to delete order:', error);
-        alert('Failed to delete order. Please try again.');
-      } finally {
-        setDeletingOrderId(null);
+  const handleDeleteOrder = (orderId: string) => {
+    setOrderToDelete(orderId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!orderToDelete) return;
+
+    setDeletingOrderId(orderToDelete);
+    setShowDeleteModal(false);
+    try {
+      await apiService.deleteOrder(orderToDelete);
+      setSuccessMessage('Successfully deleted 1 order.');
+      setShowSuccessModal(true);
+      if (onOrderDeleted) {
+        onOrderDeleted();
       }
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+      alert('Failed to delete order. Please try again.');
+    } finally {
+      setDeletingOrderId(null);
+      setOrderToDelete(null);
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     const completedSelected = Array.from(selectedOrders).filter(orderId =>
       orders.find(o => o.id === orderId)?.status === 'Completed'
     );
@@ -42,38 +56,47 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders, onOrderDeleted }) =
       return;
     }
 
-    if (window.confirm(`Are you sure you want to delete ${completedSelected.length} completed order(s)? This action cannot be undone.`)) {
-      setDeletingOrderId('bulk');
-      try {
-        const results = await Promise.allSettled(completedSelected.map(orderId => apiService.deleteOrder(orderId as string)));
-        const successfulDeletes = results.filter(result => result.status === 'fulfilled').length;
-        const failedDeletes = results.filter(result => result.status === 'rejected').length;
+    setShowBulkDeleteModal(true);
+  };
 
-        if (successfulDeletes > 0) {
-          // Clear selections for successfully deleted orders
-          const successfulOrderIds = completedSelected.filter((_, index) => results[index].status === 'fulfilled');
-          setSelectedOrders(prev => {
-            const newSet = new Set(prev);
-            successfulOrderIds.forEach(id => newSet.delete(id));
-            return newSet;
-          });
-          if (onOrderDeleted) {
-            onOrderDeleted();
-          }
-        }
+  const confirmBulkDelete = async () => {
+    const completedSelected = Array.from(selectedOrders).filter(orderId =>
+      orders.find(o => o.id === orderId)?.status === 'Completed'
+    );
 
-        if (failedDeletes > 0) {
-          console.error('Failed to delete some orders:', results.filter(r => r.status === 'rejected'));
-          alert(`Successfully deleted ${successfulDeletes} order(s). Failed to delete ${failedDeletes} order(s). Please try again for the failed ones.`);
-        } else {
-          alert(`Successfully deleted ${successfulDeletes} order(s).`);
+    setDeletingOrderId('bulk');
+    setShowBulkDeleteModal(false);
+    try {
+      const results = await Promise.allSettled(completedSelected.map(orderId => apiService.deleteOrder(orderId as string)));
+      const successfulDeletes = results.filter(result => result.status === 'fulfilled').length;
+      const failedDeletes = results.filter(result => result.status === 'rejected').length;
+
+      if (successfulDeletes > 0) {
+        // Clear selections for successfully deleted orders
+        const successfulOrderIds = completedSelected.filter((_, index) => results[index].status === 'fulfilled');
+        setSelectedOrders(prev => {
+          const newSet = new Set(prev);
+          successfulOrderIds.forEach(id => newSet.delete(id));
+          return newSet;
+        });
+        if (onOrderDeleted) {
+          onOrderDeleted();
         }
-      } catch (error) {
-        console.error('Unexpected error during bulk delete:', error);
-        alert('An unexpected error occurred. Please try again.');
-      } finally {
-        setDeletingOrderId(null);
       }
+
+      if (failedDeletes > 0) {
+        console.error('Failed to delete some orders:', results.filter(r => r.status === 'rejected'));
+        setSuccessMessage(`Successfully deleted ${successfulDeletes} order(s). Failed to delete ${failedDeletes} order(s). Please try again for the failed ones.`);
+        setShowSuccessModal(true);
+      } else {
+        setSuccessMessage(`Successfully deleted ${successfulDeletes} order(s).`);
+        setShowSuccessModal(true);
+      }
+    } catch (error) {
+      console.error('Unexpected error during bulk delete:', error);
+      alert('An unexpected error occurred. Please try again.');
+    } finally {
+      setDeletingOrderId(null);
     }
   };
 
@@ -270,6 +293,80 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders, onOrderDeleted }) =
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Delete Order</h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this completed order? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteOrder}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Delete Confirmation Modal */}
+        {showBulkDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Delete Selected Orders</h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete {Array.from(selectedOrders).filter(orderId =>
+                  orders.find(o => o.id === orderId)?.status === 'Completed'
+                ).length} completed order(s)? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowBulkDeleteModal(false)}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBulkDelete}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                >
+                  Delete All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Success</h3>
+              <p className="text-gray-600 mb-6">
+                {successMessage}
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowSuccessModal(false)}
+                  className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

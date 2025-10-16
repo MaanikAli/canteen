@@ -8,10 +8,13 @@ interface PaymentPageProps {
   onPaymentCancel: () => void;
 }
 
+// discounted item price will be updated in payment page
 const PaymentPage: React.FC<PaymentPageProps> = ({ onPaymentSuccess, onPaymentCancel }) => {
   const navigate = useNavigate();
   const [pendingOrder, setPendingOrder] = useState<{ items: CartItem[], total: number } | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
 
   useEffect(() => {
     // Retrieve the pending order from localStorage
@@ -44,6 +47,9 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onPaymentSuccess, onPaymentCa
     );
   }
 
+  const originalTotal = pendingOrder.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const discountAmount = originalTotal - pendingOrder.total;
+
   return (
     <div className="bg-light min-h-[calc(100vh-150px)] flex items-center justify-center py-12 px-4">
       <div className="max-w-lg w-full bg-white p-8 rounded-xl shadow-lg">
@@ -52,16 +58,19 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onPaymentSuccess, onPaymentCa
             <h2 className="text-2xl font-bold text-gray-800">Confirm Your Order</h2>
             <p className="text-gray-500">You are being redirected to our secure payment gateway.</p>
         </div>
-        
+
         <div className="my-6 border-t border-b py-4">
             <h3 className="font-semibold text-lg mb-2">Order Summary</h3>
             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                {pendingOrder.items.map(item => (
+                {pendingOrder.items.map(item => {
+                  const discountedPrice = item.discountPercent && item.discountPercent > 0 ? item.price - (item.price * (item.discountPercent / 100)) : item.price;
+                  return (
                     <div key={item.id} className="flex justify-between text-sm">
                         <span>{item.name} x {item.quantity}</span>
-                        <span className="font-medium">৳{(item.price * item.quantity).toFixed(2)}</span>
+                        <span className="font-medium">৳{(discountedPrice * item.quantity).toFixed(2)}</span>
                     </div>
-                ))}
+                  );
+                })}
             </div>
             <div className="flex justify-between font-bold text-xl mt-4 pt-4 border-t">
                 <span>Total Payable</span>

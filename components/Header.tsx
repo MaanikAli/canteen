@@ -18,6 +18,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, currentUser, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = React.useState(false);
 
   return (
     <header className="bg-white/80 backdrop-blur-md shadow-md sticky top-0 z-40">
@@ -60,8 +61,12 @@ const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, cu
 
             {currentUser ? (
                <div className="flex items-center space-x-2 lg:space-x-4">
-                 <Link to="/profile" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Profile</Link>
-                 <button onClick={onLogout} className="bg-red-500 text-white px-2 lg:px-3 py-1 rounded-md text-xs lg:text-sm font-semibold hover:bg-red-600 transition-colors">Logout</button>
+                 <Link to="/profile" className="flex items-center space-x-1 text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                   </svg>
+                   <span className="hidden lg:inline">Profile</span>
+                 </Link>
                </div>
             ) : (
                <div className="flex items-center space-x-2 lg:space-x-4">

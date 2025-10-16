@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Order } from '../types';
+import { apiService } from '../services/apiService';
 
 interface ProfilePageProps {
   currentUser: User;
@@ -16,18 +17,31 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, setCurrentUser, 
     setName(currentUser.name);
   }, [currentUser]);
 
-  const handleUpdateName = (e: React.FormEvent) => {
+  const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
-    const updatedUser = { ...currentUser, name };
-    setCurrentUser(updatedUser);
-    setUsers(prevUsers => prevUsers.map(u => u.id === currentUser.id ? updatedUser : u));
-    setIsEditing(false);
+    try {
+      await apiService.updateUser(currentUser.id, { name, email: currentUser.email });
+      const updatedUser = { ...currentUser, name };
+      setCurrentUser(updatedUser);
+      setUsers(prevUsers => prevUsers.map(u => u.id === currentUser.id ? updatedUser : u));
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update name:', error);
+      alert('Failed to update name. Please try again.');
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setUsers([]);
+    apiService.clearToken();
+    window.location.href = '/';
   };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">Your Profile</h1>
-      
+
       <div className="bg-white shadow-md rounded-lg p-6 mb-8">
         <h2 className="text-2xl font-semibold mb-4">Personal Information</h2>
         {!isEditing ? (
@@ -53,6 +67,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, setCurrentUser, 
         )}
       </div>
 
+      <div className="bg-white shadow-md rounded-lg p-6">
+        <h2 className="text-2xl font-semibold mb-4">Account Actions</h2>
+        <button onClick={handleLogout} className="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors">
+          Logout
+        </button>
+      </div>
 
     </div>
   );
