@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Order } from '../types';
+import { apiService } from '../services/apiService';
 
 interface KitchenDashboardProps {
   orders: Order[];
@@ -8,12 +9,23 @@ interface KitchenDashboardProps {
 }
 
 const KitchenDashboard: React.FC<KitchenDashboardProps> = ({ orders, setOrders }) => {
-  const updateOrderStatus = (orderId: string, newStatus: Order['status']) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    setLoading(orderId);
+    try {
+      await apiService.updateOrderStatus(orderId, newStatus);
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+      alert('Failed to update order status. Please try again.');
+    } finally {
+      setLoading(null);
+    }
   };
 
   const columns: Order['status'][] = ['Pending', 'Preparing', 'Ready for Pickup'];
@@ -43,25 +55,28 @@ const KitchenDashboard: React.FC<KitchenDashboardProps> = ({ orders, setOrders }
                       {status === 'Pending' && (
                         <button
                           onClick={() => updateOrderStatus(order.id, 'Preparing')}
-                          className="w-full bg-yellow-500 text-white p-2 rounded text-sm hover:bg-yellow-600"
+                          disabled={loading === order.id}
+                          className="w-full bg-yellow-500 text-white p-2 rounded text-sm hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Start Preparing
+                          {loading === order.id ? 'Updating...' : 'Start Preparing'}
                         </button>
                       )}
                       {status === 'Preparing' && (
                         <button
                           onClick={() => updateOrderStatus(order.id, 'Ready for Pickup')}
-                          className="w-full bg-green-500 text-white p-2 rounded text-sm hover:bg-green-600"
+                          disabled={loading === order.id}
+                          className="w-full bg-green-500 text-white p-2 rounded text-sm hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Mark as Ready
+                          {loading === order.id ? 'Updating...' : 'Mark as Ready'}
                         </button>
                       )}
                        {status === 'Ready for Pickup' && (
                         <button
                           onClick={() => updateOrderStatus(order.id, 'Completed')}
-                          className="w-full bg-blue-500 text-white p-2 rounded text-sm hover:bg-blue-600"
+                          disabled={loading === order.id}
+                          className="w-full bg-blue-500 text-white p-2 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Complete Order
+                          {loading === order.id ? 'Updating...' : 'Complete Order'}
                         </button>
                       )}
                     </div>

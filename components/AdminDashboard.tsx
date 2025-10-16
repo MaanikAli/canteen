@@ -206,12 +206,18 @@ const OrderManagementTab: React.FC<{
     setOrders: React.Dispatch<React.SetStateAction<Order[]>>
 }> = ({ orders, setOrders }) => {
 
-    const updateOrderStatus = (orderId: string, newStatus: Order['status']) => {
-        setOrders(prevOrders =>
-          prevOrders.map(order =>
-            order.id === orderId ? { ...order, status: newStatus } : order
-          )
-        );
+    const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+        try {
+          await apiService.updateOrderStatus(orderId, newStatus);
+          setOrders(prevOrders =>
+            prevOrders.map(order =>
+              order.id === orderId ? { ...order, status: newStatus } : order
+            )
+          );
+        } catch (error) {
+          console.error('Failed to update order status:', error);
+          alert('Failed to update order status. Please try again.');
+        }
       };
 
     return (
@@ -589,8 +595,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
       }
     };
 
+    const loadOrders = async () => {
+      try {
+        if (!apiService.getToken()) {
+          return;
+        }
+        const orders = await apiService.getOrders();
+        props.setOrders(orders);
+      } catch (error) {
+        console.error('Failed to load orders:', error);
+        showNotification('Failed to load orders: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
+      }
+    };
+
     loadUsers();
     loadMenuItems();
+    loadOrders();
   }, []);
 
   const tabs = {

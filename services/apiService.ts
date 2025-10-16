@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://canteenbc.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 class ApiService {
   private token: string | null = null;
@@ -139,7 +139,11 @@ class ApiService {
 
   // Order API
   async getOrders() {
-    return this.request('/orders');
+    const orders = await this.request('/orders');
+    return orders.map((order: any) => ({
+      ...order,
+      id: order._id || order.id
+    }));
   }
 
   async createOrder(order: any) {

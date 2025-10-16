@@ -6,10 +6,9 @@ interface ProfilePageProps {
   currentUser: User;
   setCurrentUser: (user: User | null) => void;
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
-  orders: Order[];
 }
 
-const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, setCurrentUser, setUsers, orders }) => {
+const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, setCurrentUser, setUsers }) => {
   const [name, setName] = useState(currentUser.name);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -54,32 +53,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, setCurrentUser, 
         )}
       </div>
 
-      <div className="bg-white shadow-md rounded-lg p-6">
-        <h2 className="text-2xl font-semibold mb-4">Your Order History</h2>
-        <div className="space-y-4">
-            {orders.length > 0 ? orders.map(order => (
-                <div key={order.id} className="border p-4 rounded-lg">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="font-bold">{order.id}</p>
-                            <p className="text-sm text-gray-500">{new Date(order.timestamp).toLocaleString()}</p>
-                        </div>
-                        <div className="text-right">
-                           <p className="font-bold text-lg">৳{order.totalPrice.toFixed(2)}</p>
-                           <p className="text-sm font-semibold text-blue-600">{order.status}</p>
-                        </div>
-                    </div>
-                     <ul className="text-sm list-disc list-inside mt-2">
-                        {order.items.map(item => (
-                            <li key={item.id}>{item.name} x {item.quantity}</li>
-                        ))}
-                   </ul>
-                </div>
-            )) : (
-                <p>You haven't placed any orders yet.</p>
-            )}
-        </div>
-      </div>
+
     </div>
   );
 };

@@ -13,12 +13,13 @@ import SignUpPage from './components/SignUpPage';
 import AdminDashboard from './components/AdminDashboard';
 import KitchenDashboard from './components/KitchenDashboard';
 import ProfilePage from './components/ProfilePage';
+import OrderHistory from './components/OrderHistory';
 import Cart from './components/Cart';
 import PaymentPage from './components/PaymentPage';
 
 
 import { CartItem, MenuItem, User, UserRole, Order } from './types';
-import { INITIAL_USERS } from './constants';
+import { apiService } from './services/apiService';
 
 
 // A helper to get data from localStorage
@@ -79,11 +80,22 @@ const StudentHomePage: React.FC<{
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('home');
-  const [users, setUsers] = useLocalStorage<User[]>('users', INITIAL_USERS);
+  const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useLocalStorage<User | null>('currentUser', null);
-  const [orders, setOrders] = useLocalStorage<Order[]>('orders', []);
-  const [menu, setMenu] = useLocalStorage<MenuItem[]>('menu', []);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [menu, setMenu] = useState<MenuItem[]>([]); // Only use backend data
   const [canteenName, setCanteenName] = useLocalStorage<string>('canteenName', 'Green University Canteen');
+
+  // Initialize apiService token on app start if user is logged in
+  React.useEffect(() => {
+    if (currentUser && !apiService.getToken()) {
+      // If user is logged in but no token, try to get it from localStorage
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        apiService.setToken(token);
+      }
+    }
+  }, [currentUser]);
   
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -104,20 +116,32 @@ const App: React.FC = () => {
     }
   }, [currentUser, currentPage]);
 
-  // Load menu items from API on app start
+  // Load data from backend on app start and when user logs in
   useEffect(() => {
-    const loadMenuItems = async () => {
+    const loadData = async () => {
       try {
-        const { apiService } = await import('./services/apiService');
-        const menuItems = await apiService.getMenuItems();
+        // Load menu items
+        const menuItems = await apiService.getMenu();
         setMenu(menuItems);
+
+        // Load users and orders if user is logged in
+        if (currentUser) {
+          if (currentUser.role === UserRole.Admin) {
+            const usersData = await apiService.getUsers();
+            setUsers(usersData);
+          }
+          const ordersData = await apiService.getOrders();
+          setOrders(ordersData);
+        }
       } catch (error) {
-        console.error('Failed to load menu items:', error);
-        // Keep empty array if API fails
+        console.error('Failed to load data:', error);
+        setMenu([]);
+        setUsers([]);
+        setOrders([]);
       }
     };
-    loadMenuItems();
-  }, []);
+    loadData();
+  }, [currentUser]);
 
 
   const handleAddToCart = (itemToAdd: MenuItem) => {
@@ -166,7 +190,7 @@ const App: React.FC = () => {
     setCurrentPage('payment');
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     const orderDataString = localStorage.getItem('pendingOrder');
     if (!orderDataString || !currentUser) {
         // Handle error case where data is missing
@@ -177,23 +201,37 @@ const App: React.FC = () => {
 
     const pendingOrder: { items: CartItem[], total: number } = JSON.parse(orderDataString);
 
-    const newOrder: Order = {
-      id: `ORD-${Date.now()}`,
-      userId: currentUser.id.toString(),
-      userName: currentUser.name,
-      items: pendingOrder.items,
-      totalPrice: pendingOrder.total,
-      status: 'Pending',
-      timestamp: new Date().toISOString()
-    };
-    
-    setOrders(prev => [newOrder, ...prev]);
-    setCartItems([]);
-    localStorage.removeItem('pendingOrder');
+    try {
+      // Transform cart items to backend order item schema
+      const orderItems = pendingOrder.items.map(item => ({
+        menuItemId: item.id || item._id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      }));
 
-    setCurrentPage('home');
-    setShowOrderSuccess(true);
-    setTimeout(() => setShowOrderSuccess(false), 4000);
+      const orderData = {
+        userId: currentUser.id.toString(),
+        userName: currentUser.name,
+        items: orderItems,
+        totalPrice: pendingOrder.total,
+        status: 'Pending',
+        timestamp: new Date().toISOString()
+      };
+
+      const createdOrder = await apiService.createOrder(orderData);
+      setOrders(prev => [createdOrder, ...prev]);
+      setCartItems([]);
+      localStorage.removeItem('pendingOrder');
+
+      setCurrentPage('home');
+      setShowOrderSuccess(true);
+      setTimeout(() => setShowOrderSuccess(false), 4000);
+    } catch (error) {
+      console.error('Failed to create order:', error);
+      alert("Failed to place order. Please try again.");
+      setCurrentPage('home');
+    }
   };
 
   const handlePaymentCancel = () => {
@@ -210,7 +248,8 @@ const App: React.FC = () => {
     if (currentPage === 'payment') return <PaymentPage onPaymentSuccess={handlePaymentSuccess} onPaymentCancel={handlePaymentCancel} setPage={setCurrentPage}/>
     if (currentPage === 'admin' && currentUser?.role === UserRole.Admin) return <AdminDashboard users={users} setUsers={setUsers} orders={orders} setOrders={setOrders} menu={menu} setMenu={setMenu} canteenName={canteenName} setCanteenName={setCanteenName} />;
     if (currentPage === 'kitchen' && currentUser?.role === UserRole.Kitchen) return <KitchenDashboard orders={orders} setOrders={setOrders} />;
-    if (currentPage === 'profile' && currentUser) return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} setUsers={setUsers} orders={orders.filter(o => o.userId === currentUser.id)} />;
+    if (currentPage === 'orders' && currentUser) return <OrderHistory orders={orders.filter(o => o.userId === currentUser.id)} />;
+    if (currentPage === 'profile' && currentUser) return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} setUsers={setUsers} />;
     
     // Default to student view
     return <StudentHomePage onAddToCart={handleAddToCart} menu={menu} />;
@@ -226,6 +265,7 @@ const App: React.FC = () => {
         onLogout={() => {
             setCurrentUser(null);
             setCartItems([]); // Clear cart on logout
+            apiService.clearToken(); // Clear API token
         }}
         onNavigate={setCurrentPage}
       />

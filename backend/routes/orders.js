@@ -59,10 +59,17 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'kitchen']), async (
 // Create new order (all authenticated users including admin and kitchen)
 router.post('/', authenticateToken, async (req, res) => {
   try {
+    // Fetch user to get name
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     const orderData = {
       ...req.body,
       userId: req.user.userId,
-      userName: req.user.name
+      userName: user.name
     };
     const order = new Order(orderData);
     await order.save();

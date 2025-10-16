@@ -1,40 +1,31 @@
-# Database Integration Tasks
+# TODO: Fix Frontend-Backend Connection
 
-## Backend Setup
-- [x] Create backend directory
-- [x] Initialize Node.js project with package.json
-- [x] Install dependencies: express, mongoose, cors, dotenv, bcryptjs, jsonwebtoken
-- [x] Create server.js with MongoDB connection
-- [x] Set up middleware (CORS, JSON parsing)
+## Overview
+Remove localStorage usage for users, orders, and canteenName. Fetch and update data from backend APIs instead.
 
-## Database Models
-- [x] Create User model (id, email, password, role, name, studentId)
-- [x] Create MenuItem model (id, name, description, price, category, imageUrl, isSpecial)
-- [x] Create Order model (id, userId, userName, items, totalPrice, status, timestamp)
+## Steps
 
-## API Routes
-- [x] User routes: login, signup, get users (admin)
-- [x] Menu routes: get menu, add/edit/delete items (admin)
-- [x] Order routes: place order, get orders, update status (kitchen/admin)
+### 1. Update App.tsx
+- [ ] Remove useLocalStorage for users, orders, canteenName
+- [ ] Use useState for users, orders (menu already from backend)
+- [ ] Add useEffect to fetch users and orders on app start (if logged in)
+- [ ] Update handlePaymentSuccess to send order to backend via apiService.createOrder
+- [ ] Remove localStorage operations for orders and users
+- [ ] Keep canteenName local (no backend endpoint yet)
 
-## Authentication
-- [x] Implement JWT authentication middleware
-- [x] Protect admin/kitchen routes
+### 2. Update AdminDashboard.tsx
+- [ ] Remove local loading of users and menu (handled in App.tsx)
+- [ ] Ensure user and menu management calls backend APIs and updates state
 
-## Testing
-- [x] Test MongoDB connection
-- [x] Test API endpoints with Postman or curl
-- [ ] Seed initial data if needed
+### 3. Update KitchenDashboard.tsx
+- [ ] Update updateOrderStatus to call apiService.updateOrderStatus
+- [ ] Refresh orders after status update
 
-## Frontend Integration (Optional)
-- [ ] Update frontend to use API calls instead of local state
-- [ ] Handle authentication tokens
-- [ ] Update components to fetch data from backend
+### 4. Update OrderManagementTab in AdminDashboard
+- [ ] Update updateOrderStatus to call backend API
 
-## Database Update Task
-- [x] Update MongoDB connection URI in server.js to connect to 'greenCanteenDb'
-- [x] Add code to drop the old 'test' database after establishing connection
-- [x] Run backend server to verify connection and database drop
-- [x] Test API endpoints to ensure operations work in the new database
-- [x] Fix bufferMaxEntries error in all route files
-- [x] Verify server starts successfully and connects to greenCanteenDb
+### 5. Test the changes
+- [ ] Verify login/signup works with backend
+- [ ] Verify order placement sends to backend
+- [ ] Verify order status updates work
+- [ ] Verify admin/kitchen dashboards show backend data

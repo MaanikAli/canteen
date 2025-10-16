@@ -34,6 +34,7 @@ const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, cu
             <>
               <a href="#menu" className="text-gray-600 hover:text-primary transition duration-300">Menu</a>
               <a href="#offers" className="text-gray-600 hover:text-primary transition duration-300">Offers</a>
+              <button onClick={() => onNavigate('orders')} className="text-gray-600 hover:text-primary transition duration-300">Your Orders</button>
             </>
           )}
 
