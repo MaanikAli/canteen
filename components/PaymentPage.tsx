@@ -1,14 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CartItem } from '../types';
 
 interface PaymentPageProps {
   onPaymentSuccess: () => void;
   onPaymentCancel: () => void;
-  setPage: (page: string) => void;
 }
 
-const PaymentPage: React.FC<PaymentPageProps> = ({ onPaymentSuccess, onPaymentCancel, setPage }) => {
+const PaymentPage: React.FC<PaymentPageProps> = ({ onPaymentSuccess, onPaymentCancel }) => {
+  const navigate = useNavigate();
   const [pendingOrder, setPendingOrder] = useState<{ items: CartItem[], total: number } | null>(null);
   const [processing, setProcessing] = useState(false);
 
@@ -19,9 +20,9 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onPaymentSuccess, onPaymentCa
       setPendingOrder(JSON.parse(orderData));
     } else {
       // If no order data, redirect to home
-      setPage('home');
+      navigate('/');
     }
-  }, [setPage]);
+  }, [navigate]);
 
   const handleSuccess = () => {
     setProcessing(true);

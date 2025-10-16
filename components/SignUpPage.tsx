@@ -1,13 +1,11 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { UserRole } from '../types';
 
-interface SignUpPageProps {
-  setPage: (page: string) => void;
-}
-
-const SignUpPage: React.FC<SignUpPageProps> = ({ setPage }) => {
+const SignUpPage: React.FC = () => {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [email, setEmail] = useState('');
@@ -29,7 +27,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ setPage }) => {
         name,
         ...(role === UserRole.Student && { studentId })
       });
-      setPage('login');
+      navigate('/login');
     } catch (error: any) {
       setError(error.message || 'Registration failed');
     } finally {
@@ -212,7 +210,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ setPage }) => {
               <p className="text-gray-600">
                 Already have an account?{' '}
                 <button
-                  onClick={() => setPage('login')}
+                  onClick={() => navigate('/login')}
                   className="font-semibold text-primary hover:text-primary-dark transition-colors duration-200"
                 >
                   Sign in here

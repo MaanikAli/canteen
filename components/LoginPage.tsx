@@ -1,15 +1,16 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User } from '../types';
 import { apiService } from '../services/apiService';
 
 interface LoginPageProps {
-  setPage: (page: string) => void;
   setCurrentUser: (user: User | null) => void;
   users: User[];
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ setPage, setCurrentUser, users }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ setCurrentUser, users }) => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -30,7 +31,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setPage, setCurrentUser, users })
         studentId: response.user.studentId
       };
       setCurrentUser(user);
-      setPage('home');
+      navigate('/');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Login failed');
     } finally {
@@ -141,7 +142,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setPage, setCurrentUser, users })
               <p className="text-gray-600">
                 Don't have an account?{' '}
                 <button
-                  onClick={() => setPage('signup')}
+                  onClick={() => navigate('/signup')}
                   className="font-semibold text-primary hover:text-primary-dark transition-colors duration-200"
                 >
                   Sign up here
