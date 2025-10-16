@@ -17,51 +17,117 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, currentUser, onLogout, onNavigate }) => {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
   return (
     <header className="bg-white/80 backdrop-blur-md shadow-md sticky top-0 z-40">
-      <div className="container mx-auto px-6 py-3 flex justify-between items-center">
-        <button onClick={() => onNavigate('home')} className="flex items-center space-x-2">
-          <LeafIcon />
-          <h1 className="text-2xl font-bold text-gray-800">{canteenName}</h1>
-        </button>
-        <nav className="hidden md:flex space-x-6 items-center">
-          <button onClick={() => onNavigate('home')} className="text-gray-600 hover:text-primary transition duration-300">Home</button>
-          
-          {currentUser?.role === UserRole.Admin && <button onClick={() => onNavigate('admin')} className="text-gray-600 hover:text-primary transition duration-300">Admin Panel</button>}
-          {currentUser?.role === UserRole.Kitchen && <button onClick={() => onNavigate('kitchen')} className="text-gray-600 hover:text-primary transition duration-300">Kitchen View</button>}
-          
-          {currentUser && (
-            <>
-              <a href="#menu" className="text-gray-600 hover:text-primary transition duration-300">Menu</a>
-              <a href="#offers" className="text-gray-600 hover:text-primary transition duration-300">Offers</a>
-              <button onClick={() => onNavigate('orders')} className="text-gray-600 hover:text-primary transition duration-300">Your Orders</button>
-            </>
-          )}
+      <div className="container mx-auto px-4 sm:px-6 py-3">
+        <div className="flex justify-between items-center">
+          <button onClick={() => onNavigate('home')} className="flex items-center space-x-2">
+            <LeafIcon />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{canteenName}</h1>
+          </button>
 
-          {currentUser ? (
-             <div className="flex items-center space-x-4">
-               <button onClick={() => onNavigate('profile')} className="text-gray-600 hover:text-primary transition duration-300">Profile</button>
-               <button onClick={onLogout} className="bg-red-500 text-white px-3 py-1 rounded-md text-sm font-semibold hover:bg-red-600 transition-colors">Logout</button>
-             </div>
-          ) : (
-             <div className="flex items-center space-x-4">
-               <button onClick={() => onNavigate('login')} className="text-gray-600 hover:text-primary transition duration-300">Sign In</button>
-               <button onClick={() => onNavigate('signup')} className="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-colors">Sign Up</button>
-             </div>
-          )}
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100 transition-colors"
+            aria-label="Toggle menu"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
 
-          {currentUser && cartCount > 0 && (
-            <button onClick={onCartClick} className="relative text-gray-600 hover:text-primary transition duration-300" aria-label={`Open cart with ${cartCount} items`}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span className="absolute -top-2 -right-2 bg-secondary text-gray-900 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
-                {cartCount}
-              </span>
-            </button>
-          )}
+          {/* Desktop navigation */}
+          <nav className="hidden md:flex space-x-4 lg:space-x-6 items-center">
+            <button onClick={() => onNavigate('home')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Home</button>
 
-        </nav>
+            {currentUser?.role === UserRole.Admin && <button onClick={() => onNavigate('admin')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Admin Panel</button>}
+            {currentUser?.role === UserRole.Kitchen && <button onClick={() => onNavigate('kitchen')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Kitchen</button>}
+
+            {currentUser && (
+              <>
+                <a href="#menu" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Menu</a>
+                <a href="#offers" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Offers</a>
+                <button onClick={() => onNavigate('orders')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Orders</button>
+              </>
+            )}
+
+            {currentUser ? (
+               <div className="flex items-center space-x-2 lg:space-x-4">
+                 <button onClick={() => onNavigate('profile')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Profile</button>
+                 <button onClick={onLogout} className="bg-red-500 text-white px-2 lg:px-3 py-1 rounded-md text-xs lg:text-sm font-semibold hover:bg-red-600 transition-colors">Logout</button>
+               </div>
+            ) : (
+               <div className="flex items-center space-x-2 lg:space-x-4">
+                 <button onClick={() => onNavigate('login')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Sign In</button>
+                 <button onClick={() => onNavigate('signup')} className="bg-primary text-white px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-semibold hover:bg-primary-dark transition-colors">Sign Up</button>
+               </div>
+            )}
+
+            {currentUser && cartCount > 0 && (
+              <button onClick={onCartClick} className="relative text-gray-600 hover:text-primary transition duration-300" aria-label={`Open cart with ${cartCount} items`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 lg:h-7 w-6 lg:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="absolute -top-2 -right-2 bg-secondary text-gray-900 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                  {cartCount}
+                </span>
+              </button>
+            )}
+          </nav>
+        </div>
+
+        {/* Mobile navigation */}
+        {isMenuOpen && (
+          <nav className="md:hidden mt-4 pb-4 border-t border-gray-200 pt-4">
+            <div className="flex flex-col space-y-3">
+              <button onClick={() => { onNavigate('home'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Home</button>
+
+              {currentUser?.role === UserRole.Admin && <button onClick={() => { onNavigate('admin'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Admin Panel</button>}
+              {currentUser?.role === UserRole.Kitchen && <button onClick={() => { onNavigate('kitchen'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Kitchen</button>}
+
+              {currentUser && (
+                <>
+                  <a href="#menu" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Menu</a>
+                  <a href="#offers" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Offers</a>
+                  <button onClick={() => { onNavigate('orders'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Orders</button>
+                </>
+              )}
+
+              <div className="border-t border-gray-200 pt-3 flex flex-col space-y-3">
+                {currentUser ? (
+                  <>
+                    <button onClick={() => { onNavigate('profile'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Profile</button>
+                    <button onClick={onLogout} className="text-left bg-red-500 text-white px-3 py-2 rounded-md text-sm font-semibold hover:bg-red-600 transition-colors w-fit">Logout</button>
+                  </>
+                ) : (
+                  <div className="flex space-x-3">
+                    <button onClick={() => { onNavigate('login'); setIsMenuOpen(false); }} className="text-gray-600 hover:text-primary transition duration-300">Sign In</button>
+                    <button onClick={() => { onNavigate('signup'); setIsMenuOpen(false); }} className="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-colors">Sign Up</button>
+                  </div>
+                )}
+
+                {currentUser && cartCount > 0 && (
+                  <button onClick={() => { onCartClick(); setIsMenuOpen(false); }} className="flex items-center space-x-2 text-gray-600 hover:text-primary transition duration-300 w-fit" aria-label={`Open cart with ${cartCount} items`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span className="bg-secondary text-gray-900 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                      {cartCount}
+                    </span>
+                    <span>Cart ({cartCount})</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </nav>
+        )}
       </div>
     </header>
   );

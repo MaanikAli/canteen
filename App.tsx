@@ -203,12 +203,15 @@ const App: React.FC = () => {
 
     try {
       // Transform cart items to backend order item schema
-      const orderItems = pendingOrder.items.map(item => ({
-        menuItemId: item.id || item._id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity
-      }));
+      const orderItems = pendingOrder.items.map(item => {
+        const discountedPrice = item.discountPercent && item.discountPercent > 0 ? item.price - (item.price * (item.discountPercent / 100)) : item.price;
+        return {
+          menuItemId: item.id || item._id,
+          name: item.name,
+          price: discountedPrice,
+          quantity: item.quantity
+        };
+      });
 
       const orderData = {
         userId: currentUser.id.toString(),
