@@ -6,9 +6,9 @@ let chat: Chat | null = null;
 
 const getAI = (): GoogleGenAI => {
     if (!ai) {
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.API_KEY;
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (!apiKey) {
-            throw new Error("GEMINI_API_KEY environment variable not set");
+            throw new Error("VITE_GEMINI_API_KEY environment variable not set. Please set it in your Vercel environment variables.");
         }
         ai = new GoogleGenAI({ apiKey });
     }
