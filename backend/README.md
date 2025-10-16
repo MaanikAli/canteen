@@ -113,3 +113,17 @@ backend/
 ## License
 
 This project is licensed under the MIT License.
+"### Render Deployment"  
+""  
+"1. Connect your repository to Render"  
+"2. Create a new Web Service and select your repository"  
+"3. Configure build settings:"  
+"   - Root Directory: backend (important!)"  
+"   - Build Command: npm install"  
+"   - Start Command: npm start"  
+"4. Set environment variables:"  
+"   - MONGODB_URI"  
+"   - JWT_SECRET"  
+"   - NODE_ENV=production"  
+"   - PORT=10000 (or any available port)"  
+"5. Deploy: Render will build and deploy your application" 
