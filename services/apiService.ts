@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://canteenbc.vercel.app/api';
+const API_BASE_URL = 'https://canteendb-v6gg.onrender.com/api';
 
 class ApiService {
   private token: string | null = null;
