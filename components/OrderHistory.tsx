@@ -144,6 +144,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders, onOrderDeleted }) =
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      // Handle invalid date
+      return {
+        date: 'Date not available',
+        time: ''
+      };
+    }
     return {
       date: date.toLocaleDateString('en-US', {
         year: 'numeric',

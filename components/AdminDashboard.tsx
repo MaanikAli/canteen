@@ -220,16 +220,47 @@ const OrderManagementTab: React.FC<{
         }
       };
 
+    const formatOrderId = (id: string) => {
+        // Generate a more readable order ID like "GUB-12345678"
+        const shortId = id.slice(-8).toUpperCase();
+        return `GUB-${shortId}`;
+    };
+
+    const formatDateTime = (dateString: string) => {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+          // Handle invalid date
+          return {
+            date: 'Date not available',
+            time: ''
+          };
+        }
+        return {
+          date: date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }),
+          time: date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          })
+        };
+      };
+
     return (
         <div>
             <h3 className="text-xl font-semibold mb-4">All Customer Orders</h3>
             <div className="space-y-4">
-                {orders.length > 0 ? orders.map(order => (
+                {orders.length > 0 ? orders.map(order => {
+                    const { date, time } = formatDateTime(order.timestamp || order.createdAt);
+                    return (
                     <div key={order.id} className="bg-white p-4 rounded-lg shadow-md">
                         <div className="flex justify-between items-start flex-wrap">
                             <div>
-                                <p className="font-bold text-lg">{order.id}</p>
-                                <p className="text-sm text-gray-600">By: {order.userName} on {new Date(order.timestamp).toLocaleString()}</p>
+                                <p className="font-bold text-lg">Order #{formatOrderId(order.id)}</p>
+                                <p className="text-sm text-gray-600">By: {order.userName} on {date} at {time}</p>
                             </div>
                             <div className="text-right">
                                 <p className="font-bold text-lg">৳{order.totalPrice.toFixed(2)}</p>
@@ -239,7 +270,7 @@ const OrderManagementTab: React.FC<{
                         <div className="mt-4 border-t pt-2">
                            <p className="font-semibold">Items:</p>
                            <ul className="text-sm list-disc list-inside">
-                                {order.items.map(item => <li key={item.id}>{item.name} x {item.quantity}</li>)}
+                                {order.items.map(item => <li key={item.menuItemId || item.id}>{item.name} x {item.quantity}</li>)}
                            </ul>
                         </div>
                         <div className="mt-4 flex gap-2 flex-wrap">
@@ -248,7 +279,7 @@ const OrderManagementTab: React.FC<{
                             {order.status === 'Ready for Pickup' && <button onClick={() => updateOrderStatus(order.id, 'Completed')} className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">Complete Order</button>}
                         </div>
                     </div>
-                )) : <p>No orders have been placed yet.</p>}
+                )}) : <p>No orders have been placed yet.</p>}
             </div>
         </div>
     );
