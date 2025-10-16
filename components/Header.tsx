@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { User, UserRole } from '../types';
 
 const LeafIcon = () => (
@@ -13,20 +14,19 @@ interface HeaderProps {
   onCartClick: () => void;
   currentUser: User | null;
   onLogout: () => void;
-  onNavigate: (page: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, currentUser, onLogout, onNavigate }) => {
+const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, currentUser, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   return (
     <header className="bg-white/80 backdrop-blur-md shadow-md sticky top-0 z-40">
       <div className="container mx-auto px-4 sm:px-6 py-3">
         <div className="flex justify-between items-center">
-          <button onClick={() => onNavigate('home')} className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <LeafIcon />
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{canteenName}</h1>
-          </button>
+          </Link>
 
           {/* Mobile menu button */}
           <button
@@ -45,28 +45,28 @@ const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, cu
 
           {/* Desktop navigation */}
           <nav className="hidden md:flex space-x-4 lg:space-x-6 items-center">
-            <button onClick={() => onNavigate('home')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Home</button>
+            <Link to="/" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Home</Link>
 
-            {currentUser?.role === UserRole.Admin && <button onClick={() => onNavigate('admin')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Admin Panel</button>}
-            {currentUser?.role === UserRole.Kitchen && <button onClick={() => onNavigate('kitchen')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Kitchen</button>}
+            {currentUser?.role === UserRole.Admin && <Link to="/admin" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Admin Panel</Link>}
+            {currentUser?.role === UserRole.Kitchen && <Link to="/kitchen" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Kitchen</Link>}
 
             {currentUser && (
               <>
                 <a href="#menu" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Menu</a>
                 <a href="#offers" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Offers</a>
-                <button onClick={() => onNavigate('orders')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Orders</button>
+                <Link to="/orders" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Orders</Link>
               </>
             )}
 
             {currentUser ? (
                <div className="flex items-center space-x-2 lg:space-x-4">
-                 <button onClick={() => onNavigate('profile')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Profile</button>
+                 <Link to="/profile" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Profile</Link>
                  <button onClick={onLogout} className="bg-red-500 text-white px-2 lg:px-3 py-1 rounded-md text-xs lg:text-sm font-semibold hover:bg-red-600 transition-colors">Logout</button>
                </div>
             ) : (
                <div className="flex items-center space-x-2 lg:space-x-4">
-                 <button onClick={() => onNavigate('login')} className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Sign In</button>
-                 <button onClick={() => onNavigate('signup')} className="bg-primary text-white px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-semibold hover:bg-primary-dark transition-colors">Sign Up</button>
+                 <Link to="/login" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Sign In</Link>
+                 <Link to="/signup" className="bg-primary text-white px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-semibold hover:bg-primary-dark transition-colors">Sign Up</Link>
                </div>
             )}
 
@@ -87,29 +87,29 @@ const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, cu
         {isMenuOpen && (
           <nav className="md:hidden mt-4 pb-4 border-t border-gray-200 pt-4">
             <div className="flex flex-col space-y-3">
-              <button onClick={() => { onNavigate('home'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Home</button>
+              <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Home</Link>
 
-              {currentUser?.role === UserRole.Admin && <button onClick={() => { onNavigate('admin'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Admin Panel</button>}
-              {currentUser?.role === UserRole.Kitchen && <button onClick={() => { onNavigate('kitchen'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Kitchen</button>}
+              {currentUser?.role === UserRole.Admin && <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Admin Panel</Link>}
+              {currentUser?.role === UserRole.Kitchen && <Link to="/kitchen" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Kitchen</Link>}
 
               {currentUser && (
                 <>
                   <a href="#menu" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Menu</a>
                   <a href="#offers" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Offers</a>
-                  <button onClick={() => { onNavigate('orders'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Orders</button>
+                  <Link to="/orders" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Orders</Link>
                 </>
               )}
 
               <div className="border-t border-gray-200 pt-3 flex flex-col space-y-3">
                 {currentUser ? (
                   <>
-                    <button onClick={() => { onNavigate('profile'); setIsMenuOpen(false); }} className="text-left text-gray-600 hover:text-primary transition duration-300">Profile</button>
+                    <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Profile</Link>
                     <button onClick={onLogout} className="text-left bg-red-500 text-white px-3 py-2 rounded-md text-sm font-semibold hover:bg-red-600 transition-colors w-fit">Logout</button>
                   </>
                 ) : (
                   <div className="flex space-x-3">
-                    <button onClick={() => { onNavigate('login'); setIsMenuOpen(false); }} className="text-gray-600 hover:text-primary transition duration-300">Sign In</button>
-                    <button onClick={() => { onNavigate('signup'); setIsMenuOpen(false); }} className="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-colors">Sign Up</button>
+                    <Link to="/login" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Sign In</Link>
+                    <Link to="/signup" onClick={() => setIsMenuOpen(false)} className="text-left bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-colors">Sign Up</Link>
                   </div>
                 )}
 

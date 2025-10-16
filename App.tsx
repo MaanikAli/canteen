@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Menu from './components/Menu';
@@ -177,7 +178,7 @@ const App: React.FC = () => {
   const handleCheckout = () => {
     if (!currentUser) {
         alert("Please sign in to place an order.");
-        setCurrentPage('login');
+        window.location.href = '/login';
         return;
     }
     if (cartItems.length === 0) return;
@@ -187,7 +188,7 @@ const App: React.FC = () => {
     localStorage.setItem('pendingOrder', JSON.stringify(pendingOrder));
 
     setIsCartOpen(false);
-    setCurrentPage('payment');
+    window.location.href = '/payment';
   };
 
   const handlePaymentSuccess = async () => {
@@ -195,7 +196,7 @@ const App: React.FC = () => {
     if (!orderDataString || !currentUser) {
         // Handle error case where data is missing
         alert("There was an error processing your order. Please try again.");
-        setCurrentPage('home');
+        window.location.href = '/';
         return;
     }
 
@@ -227,20 +228,20 @@ const App: React.FC = () => {
       setCartItems([]);
       localStorage.removeItem('pendingOrder');
 
-      setCurrentPage('home');
+      window.location.href = '/';
       setShowOrderSuccess(true);
       setTimeout(() => setShowOrderSuccess(false), 4000);
     } catch (error) {
       console.error('Failed to create order:', error);
       alert("Failed to place order. Please try again.");
-      setCurrentPage('home');
+      window.location.href = '/';
     }
   };
 
   const handlePaymentCancel = () => {
     localStorage.removeItem('pendingOrder');
-    setCurrentPage('home');
-    setIsCartOpen(true); // Re-open cart
+    window.location.href = '/';
+    // Note: setIsCartOpen(true) won't work here because of page reload, but cart state is preserved
   }
 
   const cartCount = useMemo(() => cartItems.reduce((count, item) => count + item.quantity, 0), [cartItems]);
@@ -259,35 +260,45 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="font-sans text-gray-800">
-      <Header 
-        canteenName={canteenName}
-        cartCount={cartCount} 
-        onCartClick={() => setIsCartOpen(true)}
-        currentUser={currentUser}
-        onLogout={() => {
-            setCurrentUser(null);
-            setCartItems([]); // Clear cart on logout
-            apiService.clearToken(); // Clear API token
-        }}
-        onNavigate={setCurrentPage}
-      />
-      
-      {renderPage()}
-      
-      {currentUser && (
-         <Cart
-            isOpen={isCartOpen}
-            onClose={() => setIsCartOpen(false)}
-            cartItems={cartItems}
-            onUpdateQuantity={handleUpdateQuantity}
-            onCheckout={handleCheckout}
-            totalPrice={totalPrice}
-          />
-      )}
+    <BrowserRouter>
+      <div className="font-sans text-gray-800">
+        <Header
+          canteenName={canteenName}
+          cartCount={cartCount}
+          onCartClick={() => setIsCartOpen(true)}
+          currentUser={currentUser}
+          onLogout={() => {
+              setCurrentUser(null);
+              setCartItems([]); // Clear cart on logout
+              apiService.clearToken(); // Clear API token
+          }}
+        />
 
-      {showOrderSuccess && <OrderSuccessNotification onClose={() => setShowOrderSuccess(false)} />}
-    </div>
+        <Routes>
+          <Route path="/" element={<StudentHomePage onAddToCart={handleAddToCart} menu={menu} />} />
+          <Route path="/login" element={<LoginPage setCurrentUser={setCurrentUser} users={users} />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/payment" element={<PaymentPage onPaymentSuccess={handlePaymentSuccess} onPaymentCancel={handlePaymentCancel} />} />
+          <Route path="/admin" element={currentUser?.role === UserRole.Admin ? <AdminDashboard users={users} setUsers={setUsers} orders={orders} setOrders={setOrders} menu={menu} setMenu={setMenu} canteenName={canteenName} setCanteenName={setCanteenName} /> : <div>Access Denied</div>} />
+          <Route path="/kitchen" element={currentUser?.role === UserRole.Kitchen ? <KitchenDashboard orders={orders} setOrders={setOrders} /> : <div>Access Denied</div>} />
+          <Route path="/orders" element={currentUser ? <OrderHistory orders={orders.filter(o => o.userId === currentUser.id)} /> : <div>Please log in</div>} />
+          <Route path="/profile" element={currentUser ? <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} setUsers={setUsers} /> : <div>Please log in</div>} />
+        </Routes>
+
+        {currentUser && (
+           <Cart
+              isOpen={isCartOpen}
+              onClose={() => setIsCartOpen(false)}
+              cartItems={cartItems}
+              onUpdateQuantity={handleUpdateQuantity}
+              onCheckout={handleCheckout}
+              totalPrice={totalPrice}
+            />
+        )}
+
+        {showOrderSuccess && <OrderSuccessNotification onClose={() => setShowOrderSuccess(false)} />}
+      </div>
+    </BrowserRouter>
   );
 };
 
