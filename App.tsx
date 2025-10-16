@@ -102,6 +102,7 @@ const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [menu, setMenu] = useState<MenuItem[]>([]); // Only use backend data
   const [canteenName, setCanteenName] = useLocalStorage<string>('canteenName', 'Green University Canteen');
+  const [logoUrl, setLogoUrl] = useLocalStorage<string>('logoUrl', '');
   const [socket, setSocket] = useState<Socket | null>(null);
   const [notifications, setNotifications] = useState<{id: string, message: string, type: 'success' | 'info' | 'warning'}[]>([]);
 
@@ -214,6 +215,11 @@ const App: React.FC = () => {
         // Load menu items
         const menuItems = await apiService.getMenu();
         setMenu(menuItems);
+
+        // Load settings
+        const settings = await apiService.getSettings();
+        setCanteenName(settings.canteenName);
+        setLogoUrl(settings.logoUrl);
 
         // Load users and orders if user is logged in
         if (currentUser) {
@@ -357,6 +363,7 @@ const App: React.FC = () => {
       <div className="font-sans text-gray-800">
         <Header
           canteenName={canteenName}
+          logoUrl={logoUrl}
           cartCount={cartCount}
           onCartClick={() => setIsCartOpen(true)}
           currentUser={currentUser}
@@ -374,7 +381,7 @@ const App: React.FC = () => {
           <Route path="/login" element={<LoginPage setCurrentUser={setCurrentUser} users={users} />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/payment" element={<PaymentPage onPaymentSuccess={handlePaymentSuccess} onPaymentCancel={handlePaymentCancel} />} />
-          <Route path="/admin" element={currentUser?.role === UserRole.Admin ? <AdminDashboard users={users} setUsers={setUsers} orders={orders} setOrders={setOrders} menu={menu} setMenu={setMenu} canteenName={canteenName} setCanteenName={setCanteenName} /> : <div>Access Denied</div>} />
+          <Route path="/admin" element={currentUser?.role === UserRole.Admin ? <AdminDashboard users={users} setUsers={setUsers} orders={orders} setOrders={setOrders} menu={menu} setMenu={setMenu} canteenName={canteenName} setCanteenName={setCanteenName} logoUrl={logoUrl} setLogoUrl={setLogoUrl} /> : <div>Access Denied</div>} />
           <Route path="/kitchen" element={currentUser?.role === UserRole.Kitchen ? <KitchenDashboard orders={orders} setOrders={setOrders} /> : <div>Access Denied</div>} />
           <Route path="/orders" element={currentUser ? <OrderHistory orders={orders.filter(o => o.userId === currentUser.id)} onOrderDeleted={() => {
             // Refresh orders after deletion

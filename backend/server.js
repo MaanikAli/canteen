@@ -2,11 +2,13 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import userRoutes from './routes/users.js';
 import menuRoutes from './routes/menu.js';
 import orderRoutes from './routes/orders.js';
+import settingsRoutes from './routes/settings.js';
 
 dotenv.config();
 
@@ -74,6 +76,10 @@ if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
 app.use('/api/users', userRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/settings', settingsRoutes);
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(process.cwd(), '..', 'uploads')));
 
 // Health check
 app.get('/api/health', (req, res) => {

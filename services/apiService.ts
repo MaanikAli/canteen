@@ -165,6 +165,41 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  // Settings API
+  async getSettings() {
+    return this.request('/settings');
+  }
+
+  async updateSettings(settingsData: { canteenName?: string; logo?: File }) {
+    const formData = new FormData();
+    if (settingsData.canteenName) {
+      formData.append('canteenName', settingsData.canteenName);
+    }
+    if (settingsData.logo) {
+      formData.append('logo', settingsData.logo);
+    }
+
+    const config: RequestInit = {
+      method: 'PUT',
+      body: formData,
+    };
+
+    if (this.token) {
+      config.headers = {
+        Authorization: `Bearer ${this.token}`,
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/settings`, config);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Network error' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const apiService = new ApiService();

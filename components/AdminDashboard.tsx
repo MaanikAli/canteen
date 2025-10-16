@@ -517,14 +517,51 @@ const AIInsightsTab: React.FC<{ orders: Order[]; menu: MenuItem[] }> = ({ orders
 const SettingsTab: React.FC<{
     canteenName: string;
     setCanteenName: React.Dispatch<React.SetStateAction<string>>;
+    logoUrl: string;
+    setLogoUrl: React.Dispatch<React.SetStateAction<string>>;
     showNotification: (message: string, type?: 'success' | 'error' | 'info') => void;
-}> = ({ canteenName, setCanteenName, showNotification }) => {
+}> = ({ canteenName, setCanteenName, logoUrl, setLogoUrl, showNotification }) => {
     const [name, setName] = useState(canteenName);
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [loading, setLoading] = useState(false);
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        setCanteenName(name);
-        showNotification('Settings saved successfully!', 'success');
+        setLoading(true);
+        try {
+            if (!apiService.getToken()) {
+                showNotification('Please log in to perform this action', 'error');
+                return;
+            }
+            const settingsData: { canteenName?: string; logo?: File } = { canteenName: name };
+            if (logoFile) {
+                settingsData.logo = logoFile;
+            }
+            const updatedSettings = await apiService.updateSettings(settingsData);
+            setCanteenName(updatedSettings.canteenName);
+            setLogoUrl(updatedSettings.logoUrl);
+            setLogoFile(null);
+            showNotification('Settings saved successfully!', 'success');
+        } catch (error: any) {
+            showNotification('Failed to save settings: ' + error.message, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
+                showNotification('Only PNG and JPEG images are allowed', 'error');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                showNotification('File size must be less than 5MB', 'error');
+                return;
+            }
+            setLogoFile(file);
+        }
     };
 
     return (
@@ -533,8 +570,19 @@ const SettingsTab: React.FC<{
              <div className="bg-white p-6 rounded-lg shadow-md">
                 <form onSubmit={handleSave}>
                     <label htmlFor="canteenName" className="block text-sm font-medium text-gray-700">Canteen Name</label>
-                    <input type="text" id="canteenName" value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full max-w-md px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm" />
-                    <button type="submit" className="mt-4 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark">Save Settings</button>
+                    <input type="text" id="canteenName" value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full max-w-md px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm" required />
+                    <label htmlFor="logoFile" className="block text-sm font-medium text-gray-700 mt-4">Logo Upload (PNG/JPEG, max 5MB)</label>
+                    <input type="file" id="logoFile" accept="image/png,image/jpeg" onChange={handleFileChange} className="mt-1 block w-full max-w-md px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm" />
+                    {logoFile && <p className="mt-2 text-sm text-gray-600">Selected: {logoFile.name}</p>}
+                    {logoUrl && (
+                        <div className="mt-4">
+                            <p className="text-sm font-medium text-gray-700">Current Logo:</p>
+                            <img src={`http://localhost:5000${logoUrl}`} alt="Current Logo" className="mt-2 h-16 w-auto" />
+                        </div>
+                    )}
+                    <button type="submit" disabled={loading} className="mt-4 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark disabled:bg-gray-400">
+                        {loading ? 'Saving...' : 'Save Settings'}
+                    </button>
                 </form>
              </div>
         </div>
@@ -552,6 +600,8 @@ interface AdminDashboardProps {
     setMenu: React.Dispatch<React.SetStateAction<MenuItem[]>>;
     canteenName: string;
     setCanteenName: React.Dispatch<React.SetStateAction<string>>;
+    logoUrl: string;
+    setLogoUrl: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
@@ -619,7 +669,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     orders: { label: 'Order Management', component: <OrderManagementTab orders={props.orders} setOrders={props.setOrders} /> },
     menu: { label: 'Menu Management', component: <MenuManagementTab menu={props.menu} setMenu={props.setMenu} showNotification={showNotification} /> },
     ai: { label: 'AI Insights', component: <AIInsightsTab orders={props.orders} menu={props.menu} /> },
-    settings: { label: 'Settings', component: <SettingsTab canteenName={props.canteenName} setCanteenName={props.setCanteenName} showNotification={showNotification} /> }
+    settings: { label: 'Settings', component: <SettingsTab canteenName={props.canteenName} setCanteenName={props.setCanteenName} logoUrl={props.logoUrl} setLogoUrl={props.setLogoUrl} showNotification={showNotification} /> }
   };
 
   return (

@@ -10,13 +10,14 @@ const LeafIcon = () => (
 
 interface HeaderProps {
   canteenName: string;
+  logoUrl: string;
   cartCount: number;
   onCartClick: () => void;
   currentUser: User | null;
   onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, currentUser, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ canteenName, logoUrl, cartCount, onCartClick, currentUser, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = React.useState(false);
 
@@ -25,7 +26,11 @@ const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, cu
       <div className="container mx-auto px-4 sm:px-6 py-3">
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
-            <LeafIcon />
+            {logoUrl ? (
+              <img src={`http://localhost:5000${logoUrl}`} alt="Canteen Logo" className="h-16 w-16 object-contain" />
+            ) : (
+              <LeafIcon />
+            )}
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{canteenName}</h1>
           </Link>
 
