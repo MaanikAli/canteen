@@ -23,6 +23,9 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 5000;
 
+// For Vercel serverless functions
+export default app;
+
 // Middleware
 app.use(cors());
 app.use(express.json());
