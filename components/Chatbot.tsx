@@ -19,7 +19,16 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
 
   useEffect(() => {
     // Initialize the chat session when the component mounts
-    chatSession.current = startChat();
+    try {
+      chatSession.current = startChat();
+    } catch (error) {
+      console.error("Failed to initialize chat session:", error);
+      // Show error message in chat
+      setMessages(prev => [...prev, {
+        role: 'model',
+        text: 'Sorry, the AI assistant is currently unavailable. Please try again later.'
+      }]);
+    }
   }, []);
 
   useEffect(() => {
@@ -41,6 +50,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
       const botMessage: ChatMessage = { role: 'model', text: botResponseText };
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
+      console.error("Error sending message:", error);
       const errorMessage: ChatMessage = { role: 'model', text: 'Oops! Something went wrong. Please try again.' };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
