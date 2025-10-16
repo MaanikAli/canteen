@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { io, Socket } from 'socket.io-client';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Menu from './components/Menu';
@@ -60,8 +61,23 @@ const OrderSuccessNotification: React.FC<{onClose: () => void}> = ({onClose}) =>
 const StudentHomePage: React.FC<{
   onAddToCart: (item: MenuItem) => void;
   menu: MenuItem[];
-}> = ({ onAddToCart, menu }) => {
+  section?: string;
+}> = ({ onAddToCart, menu, section }) => {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+
+  useEffect(() => {
+    if (section === 'offers') {
+      const offersElement = document.getElementById('offers');
+      if (offersElement) {
+        offersElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (section === 'menu') {
+      const menuElement = document.getElementById('menu');
+      if (menuElement) {
+        menuElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [section]);
 
   return (
     <>
@@ -86,6 +102,8 @@ const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [menu, setMenu] = useState<MenuItem[]>([]); // Only use backend data
   const [canteenName, setCanteenName] = useLocalStorage<string>('canteenName', 'Green University Canteen');
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [notifications, setNotifications] = useState<{id: string, message: string, type: 'success' | 'info' | 'warning'}[]>([]);
 
   // Initialize apiService token on app start if user is logged in
   React.useEffect(() => {
@@ -97,7 +115,79 @@ const App: React.FC = () => {
       }
     }
   }, [currentUser]);
-  
+
+  // Socket.IO connection
+  useEffect(() => {
+    const newSocket = io('http://localhost:5000');
+    setSocket(newSocket);
+
+    newSocket.on('orderStatusUpdate', async (data) => {
+      const { orderId, status, userId, userName } = data;
+
+      // Re-fetch orders to ensure instant update
+      try {
+        const ordersData = await apiService.getOrders();
+        setOrders(ordersData);
+      } catch (error) {
+        console.error('Failed to refresh orders:', error);
+      }
+
+      // Show notification to relevant users (customer and admins only for status updates)
+      if (currentUser && (currentUser.id === userId || currentUser.role === UserRole.Admin)) {
+        const statusMessages = {
+          'Preparing': `Your order is now being prepared!`,
+          'Ready for Pickup': `Your order is ready for pickup!`,
+          'Completed': `Your order has been completed!`
+        };
+
+        const message = statusMessages[status as keyof typeof statusMessages] || `Order status updated to ${status}`;
+
+        const notification = {
+          id: Date.now().toString(),
+          message,
+          type: 'info' as const
+        };
+
+        setNotifications(prev => [...prev, notification]);
+
+        // Auto-remove notification after 5 seconds
+        setTimeout(() => {
+          setNotifications(prev => prev.filter(n => n.id !== notification.id));
+        }, 5000);
+      }
+    });
+
+    newSocket.on('newOrder', async (data) => {
+      // Re-fetch orders to show new order instantly in kitchen/admin dashboards
+      try {
+        const ordersData = await apiService.getOrders();
+        setOrders(ordersData);
+      } catch (error) {
+        console.error('Failed to refresh orders for new order:', error);
+      }
+
+      // Show notification to admin staff only
+      if (currentUser && currentUser.role === UserRole.Admin) {
+        const notification = {
+          id: Date.now().toString(),
+          message: `New order received from ${data.userName}!`,
+          type: 'success' as const
+        };
+
+        setNotifications(prev => [...prev, notification]);
+
+        // Auto-remove notification after 5 seconds
+        setTimeout(() => {
+          setNotifications(prev => prev.filter(n => n.id !== notification.id));
+        }, 5000);
+      }
+    });
+
+    return () => {
+      newSocket.close();
+    };
+  }, [currentUser]);
+
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
@@ -252,7 +342,10 @@ const App: React.FC = () => {
     if (currentPage === 'payment') return <PaymentPage onPaymentSuccess={handlePaymentSuccess} onPaymentCancel={handlePaymentCancel} setPage={setCurrentPage}/>
     if (currentPage === 'admin' && currentUser?.role === UserRole.Admin) return <AdminDashboard users={users} setUsers={setUsers} orders={orders} setOrders={setOrders} menu={menu} setMenu={setMenu} canteenName={canteenName} setCanteenName={setCanteenName} />;
     if (currentPage === 'kitchen' && currentUser?.role === UserRole.Kitchen) return <KitchenDashboard orders={orders} setOrders={setOrders} />;
-    if (currentPage === 'orders' && currentUser) return <OrderHistory orders={orders.filter(o => o.userId === currentUser.id)} />;
+    if (currentPage === 'orders' && currentUser) {
+      const filteredOrders = currentUser.role === UserRole.Kitchen ? orders : orders.filter(o => o.userId === currentUser.id);
+      return <OrderHistory orders={filteredOrders} />;
+    }
     if (currentPage === 'profile' && currentUser) return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} setUsers={setUsers} />;
     
     // Default to student view
@@ -276,12 +369,25 @@ const App: React.FC = () => {
 
         <Routes>
           <Route path="/" element={<StudentHomePage onAddToCart={handleAddToCart} menu={menu} />} />
+          <Route path="/menu" element={<StudentHomePage onAddToCart={handleAddToCart} menu={menu} section="menu" />} />
+          <Route path="/offers" element={<StudentHomePage onAddToCart={handleAddToCart} menu={menu} section="offers" />} />
           <Route path="/login" element={<LoginPage setCurrentUser={setCurrentUser} users={users} />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/payment" element={<PaymentPage onPaymentSuccess={handlePaymentSuccess} onPaymentCancel={handlePaymentCancel} />} />
           <Route path="/admin" element={currentUser?.role === UserRole.Admin ? <AdminDashboard users={users} setUsers={setUsers} orders={orders} setOrders={setOrders} menu={menu} setMenu={setMenu} canteenName={canteenName} setCanteenName={setCanteenName} /> : <div>Access Denied</div>} />
           <Route path="/kitchen" element={currentUser?.role === UserRole.Kitchen ? <KitchenDashboard orders={orders} setOrders={setOrders} /> : <div>Access Denied</div>} />
-          <Route path="/orders" element={currentUser ? <OrderHistory orders={orders.filter(o => o.userId === currentUser.id)} /> : <div>Please log in</div>} />
+          <Route path="/orders" element={currentUser ? <OrderHistory orders={orders.filter(o => o.userId === currentUser.id)} onOrderDeleted={() => {
+            // Refresh orders after deletion
+            const loadOrders = async () => {
+              try {
+                const ordersData = await apiService.getOrders();
+                setOrders(ordersData);
+              } catch (error) {
+                console.error('Failed to refresh orders:', error);
+              }
+            };
+            loadOrders();
+          }} /> : <div>Please log in</div>} />
           <Route path="/profile" element={currentUser ? <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} setUsers={setUsers} /> : <div>Please log in</div>} />
         </Routes>
 
@@ -297,6 +403,29 @@ const App: React.FC = () => {
         )}
 
         {showOrderSuccess && <OrderSuccessNotification onClose={() => setShowOrderSuccess(false)} />}
+
+        {/* Real-time Notifications */}
+        {notifications.map(notification => (
+          <div
+            key={notification.id}
+            className={`fixed top-5 right-5 p-4 rounded-lg shadow-lg z-50 flex items-center gap-3 animate-fade-in-down ${
+              notification.type === 'success' ? 'bg-green-500 text-white' :
+              notification.type === 'warning' ? 'bg-yellow-500 text-black' :
+              'bg-blue-500 text-white'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{notification.message}</span>
+            <button
+              onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+              className="ml-4 font-bold"
+            >
+              &times;
+            </button>
+          </div>
+        ))}
       </div>
     </BrowserRouter>
   );

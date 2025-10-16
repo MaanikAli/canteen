@@ -94,6 +94,20 @@ router.post('/', authenticateToken, async (req, res) => {
     };
     const order = new Order(orderData);
     await order.save();
+
+    // Emit real-time update for new order
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('newOrder', {
+        orderId: order._id,
+        userId: order.userId,
+        userName: order.userName,
+        status: order.status,
+        items: order.items,
+        totalPrice: order.totalPrice
+      });
+    }
+
     res.status(201).json(order);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -112,7 +126,44 @@ router.put('/:id/status', authenticateToken, requireRole(['admin', 'kitchen']), 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
+
+    // Emit real-time update via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('orderStatusUpdate', {
+        orderId: order._id,
+        status: order.status,
+        userId: order.userId,
+        userName: order.userName
+      });
+    }
+
     res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Delete order (admin or order owner for completed orders)
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check permissions: admin can delete any order, users can only delete their own completed orders
+    if (req.user.role !== 'admin' && order.userId.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'You can only delete your own orders' });
+    }
+
+    // Only allow deletion of completed orders for non-admin users
+    if (req.user.role !== 'admin' && order.status !== 'Completed') {
+      return res.status(400).json({ message: 'Only completed orders can be deleted' });
+    }
+
+    await Order.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Order deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

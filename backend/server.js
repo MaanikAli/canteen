@@ -2,6 +2,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import userRoutes from './routes/users.js';
 import menuRoutes from './routes/menu.js';
 import orderRoutes from './routes/orders.js';
@@ -9,6 +11,14 @@ import orderRoutes from './routes/orders.js';
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"]
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -75,6 +85,18 @@ app.get('/api/dbname', (req, res) => {
   res.json({ databaseName: mongoose.connection.db.databaseName });
 });
 
-app.listen(PORT, () => {
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Make io available to routes
+app.set('io', io);
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

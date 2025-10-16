@@ -1,11 +1,118 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Order } from '../types';
+import { apiService } from '../services/apiService';
 
 interface OrderHistoryProps {
   orders: Order[];
+  onOrderDeleted?: () => void;
 }
 
-const OrderHistory: React.FC<OrderHistoryProps> = ({ orders }) => {
+type SortOption = 'newest' | 'oldest' | 'status' | 'price-high' | 'price-low';
+
+const OrderHistory: React.FC<OrderHistoryProps> = ({ orders, onOrderDeleted }) => {
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (window.confirm('Are you sure you want to delete this completed order? This action cannot be undone.')) {
+      setDeletingOrderId(orderId);
+      try {
+        await apiService.deleteOrder(orderId);
+        if (onOrderDeleted) {
+          onOrderDeleted();
+        }
+      } catch (error) {
+        console.error('Failed to delete order:', error);
+        alert('Failed to delete order. Please try again.');
+      } finally {
+        setDeletingOrderId(null);
+      }
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const completedSelected = Array.from(selectedOrders).filter(orderId =>
+      orders.find(o => o.id === orderId)?.status === 'Completed'
+    );
+
+    if (completedSelected.length === 0) {
+      alert('Please select completed orders to delete.');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete ${completedSelected.length} completed order(s)? This action cannot be undone.`)) {
+      setDeletingOrderId('bulk');
+      try {
+        const results = await Promise.allSettled(completedSelected.map(orderId => apiService.deleteOrder(orderId as string)));
+        const successfulDeletes = results.filter(result => result.status === 'fulfilled').length;
+        const failedDeletes = results.filter(result => result.status === 'rejected').length;
+
+        if (successfulDeletes > 0) {
+          // Clear selections for successfully deleted orders
+          const successfulOrderIds = completedSelected.filter((_, index) => results[index].status === 'fulfilled');
+          setSelectedOrders(prev => {
+            const newSet = new Set(prev);
+            successfulOrderIds.forEach(id => newSet.delete(id));
+            return newSet;
+          });
+          if (onOrderDeleted) {
+            onOrderDeleted();
+          }
+        }
+
+        if (failedDeletes > 0) {
+          console.error('Failed to delete some orders:', results.filter(r => r.status === 'rejected'));
+          alert(`Successfully deleted ${successfulDeletes} order(s). Failed to delete ${failedDeletes} order(s). Please try again for the failed ones.`);
+        } else {
+          alert(`Successfully deleted ${successfulDeletes} order(s).`);
+        }
+      } catch (error) {
+        console.error('Unexpected error during bulk delete:', error);
+        alert('An unexpected error occurred. Please try again.');
+      } finally {
+        setDeletingOrderId(null);
+      }
+    }
+  };
+
+  const handleSelectOrder = (orderId: string) => {
+    const newSelected = new Set(selectedOrders);
+    if (newSelected.has(orderId)) {
+      newSelected.delete(orderId);
+    } else {
+      newSelected.add(orderId);
+    }
+    setSelectedOrders(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    const completedOrders = orders.filter(o => o.status === 'Completed');
+    if (selectedOrders.size === completedOrders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(completedOrders.map(o => o.id)));
+    }
+  };
+
+  const sortedOrders = useMemo(() => {
+    const sorted = [...orders];
+    switch (sortBy) {
+      case 'newest':
+        return sorted.sort((a, b) => new Date(b.timestamp || b.createdAt).getTime() - new Date(a.timestamp || a.createdAt).getTime());
+      case 'oldest':
+        return sorted.sort((a, b) => new Date(a.timestamp || a.createdAt).getTime() - new Date(b.timestamp || b.createdAt).getTime());
+      case 'status':
+        return sorted.sort((a, b) => a.status.localeCompare(b.status));
+      case 'price-high':
+        return sorted.sort((a, b) => b.totalPrice - a.totalPrice);
+      case 'price-low':
+        return sorted.sort((a, b) => a.totalPrice - b.totalPrice);
+      default:
+        return sorted;
+    }
+  }, [orders, sortBy]);
   const formatOrderId = (id: string) => {
     // Generate a more readable order ID like "GUB-12345678"
     const shortId = id.slice(-8).toUpperCase();
@@ -38,10 +145,61 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders }) => {
     }
   };
 
+  const completedOrdersCount = orders.filter(o => o.status === 'Completed').length;
+
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 bg-light min-h-screen">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center">Your Order History</h1>
+
+        {/* Controls */}
+        {orders.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div>
+                  <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-1">Sort by:</label>
+                  <select
+                    id="sort"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="status">Status</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="price-low">Price: Low to High</option>
+                  </select>
+                </div>
+
+                {completedOrdersCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSelectAll}
+                      className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                    >
+                      {selectedOrders.size === completedOrdersCount ? 'Deselect All' : 'Select All Completed'}
+                    </button>
+                    {selectedOrders.size > 0 && (
+                      <button
+                        onClick={handleBulkDelete}
+                        disabled={deletingOrderId === 'bulk'}
+                        className="px-3 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors disabled:opacity-50"
+                      >
+                        {deletingOrderId === 'bulk' ? 'Deleting...' : `Delete Selected (${selectedOrders.size})`}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="text-sm text-gray-600">
+                {orders.length} order{orders.length !== 1 ? 's' : ''} • {completedOrdersCount} completed
+              </div>
+            </div>
+          </div>
+        )}
 
         {orders.length === 0 ? (
           <div className="text-center py-8 sm:py-12">
@@ -55,24 +213,43 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders }) => {
           </div>
         ) : (
           <div className="space-y-4 sm:space-y-6">
-            {orders.map(order => {
+            {sortedOrders.map(order => {
               const { date, time } = formatDateTime(order.timestamp || order.createdAt);
               return (
                 <div key={order.id} className="bg-white rounded-lg shadow-md p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 gap-2">
-                    <div>
-                      <h3 className="text-base sm:text-lg font-bold text-gray-800">
-                        Order #{formatOrderId(order.id)}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-600">
-                        {date} at {time}
-                      </p>
+                    <div className="flex items-start gap-3">
+                      {order.status === 'Completed' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.has(order.id)}
+                          onChange={() => handleSelectOrder(order.id)}
+                          className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                        />
+                      )}
+                      <div>
+                        <h3 className="text-base sm:text-lg font-bold text-gray-800">
+                          Order #{formatOrderId(order.id)}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-600">
+                          {date} at {time}
+                        </p>
+                      </div>
                     </div>
                     <div className="text-left sm:text-right">
                       <p className="text-xl sm:text-2xl font-bold text-primary">৳{order.totalPrice.toFixed(2)}</p>
                       <span className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium mt-1 ${getStatusColor(order.status)}`}>
                         {order.status}
                       </span>
+                      {order.status === 'Completed' && (
+                        <button
+                          onClick={() => handleDeleteOrder(order.id)}
+                          disabled={deletingOrderId === order.id}
+                          className="mt-2 px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 disabled:opacity-50"
+                        >
+                          {deletingOrderId === order.id ? 'Deleting...' : 'Delete Order'}
+                        </button>
+                      )}
                     </div>
                   </div>
 

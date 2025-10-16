@@ -159,6 +159,12 @@ class ApiService {
       body: JSON.stringify({ status }),
     });
   }
+
+  async deleteOrder(orderId: string) {
+    return this.request(`/orders/${orderId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiService = new ApiService();

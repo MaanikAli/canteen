@@ -52,8 +52,8 @@ const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, cu
 
             {currentUser && (
               <>
-                <a href="#menu" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Menu</a>
-                <a href="#offers" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Offers</a>
+                <Link to="/menu" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Menu</Link>
+                <Link to="/offers" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Offers</Link>
                 <Link to="/orders" className="text-gray-600 hover:text-primary transition duration-300 text-sm lg:text-base">Orders</Link>
               </>
             )}
@@ -94,8 +94,8 @@ const Header: React.FC<HeaderProps> = ({ canteenName, cartCount, onCartClick, cu
 
               {currentUser && (
                 <>
-                  <a href="#menu" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Menu</a>
-                  <a href="#offers" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Offers</a>
+                  <Link to="/menu" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Menu</Link>
+                  <Link to="/offers" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Offers</Link>
                   <Link to="/orders" onClick={() => setIsMenuOpen(false)} className="text-left text-gray-600 hover:text-primary transition duration-300">Orders</Link>
                 </>
               )}
