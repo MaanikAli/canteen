@@ -133,8 +133,8 @@ const App: React.FC = () => {
         console.error('Failed to refresh orders:', error);
       }
 
-      // Show notification to relevant users (customer and admins only for status updates)
-      if (currentUser && (currentUser.id === userId || currentUser.role === UserRole.Admin)) {
+      // Show notification to customers only for status updates
+      if (currentUser && currentUser.id === userId) {
         const statusMessages = {
           'Preparing': `Your order is now being prepared!`,
           'Ready for Pickup': `Your order is ready for pickup!`,
@@ -167,8 +167,8 @@ const App: React.FC = () => {
         console.error('Failed to refresh orders for new order:', error);
       }
 
-      // Show notification to admin staff only
-      if (currentUser && currentUser.role === UserRole.Admin) {
+      // Show notification to admin and kitchen staff
+      if (currentUser && (currentUser.role === "admin" || currentUser.role === "kitchen")) {
         const notification = {
           id: Date.now().toString(),
           message: `New order received from ${data.userName}!`,
