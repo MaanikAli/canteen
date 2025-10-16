@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ canteenName, logoUrl, cartCount, onCart
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             {logoUrl ? (
-              <img src={`http://localhost:5000${logoUrl}`} alt="Canteen Logo" className="h-16 w-16 object-contain" />
+              <img src={`${import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:5000'}${logoUrl}`} alt="Canteen Logo" className="h-16 w-16 object-contain" />
             ) : (
               <LeafIcon />
             )}
