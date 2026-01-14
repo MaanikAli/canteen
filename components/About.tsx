@@ -7,7 +7,7 @@ const About: React.FC = () => {
       <div className="container mx-auto px-6">
         <div className="flex flex-col lg:flex-row items-center gap-12">
           <div className="lg:w-1/2">
-            <img src="https://picsum.photos/id/122/600/400" alt="Canteen Staff" className="rounded-lg shadow-lg" />
+            <img src="/uploads/canteen1.jpg" alt="Green University Canteen" className="rounded-lg shadow-lg" />
           </div>
           <div className="lg:w-1/2">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Our Mission</h2>
