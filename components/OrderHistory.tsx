@@ -19,6 +19,29 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders, onOrderDeleted }) =
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [generatingOTP, setGeneratingOTP] = useState<string | null>(null);
+
+  const handleGenerateOTP = async (orderId: string) => {
+    setGeneratingOTP(orderId);
+    try {
+      const response = await apiService.generateOTP(orderId);
+      setSuccessMessage('OTP generated successfully!');
+      setShowSuccessModal(true);
+      // Update the local order state with the new OTP
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId
+            ? { ...order, otp: response.otp }
+            : order
+        )
+      );
+    } catch (error) {
+      console.error('Failed to generate OTP:', error);
+      alert('Failed to generate OTP. Please try again.');
+    } finally {
+      setGeneratingOTP(null);
+    }
+  };
 
   const handleDeleteOrder = (orderId: string) => {
     setOrderToDelete(orderId);
@@ -271,6 +294,25 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders, onOrderDeleted }) =
                       <span className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium mt-1 ${getStatusColor(order.status)}`}>
                         {order.status}
                       </span>
+                      {order.status === 'Ready for Pickup' && (
+                        <div className="mt-2">
+                          {order.otp ? (
+                            <div className="bg-green-50 border border-green-200 rounded p-3">
+                              <p className="text-sm font-semibold text-green-800 mb-1">Your Pickup OTP:</p>
+                              <p className="text-2xl font-bold text-green-600 tracking-wider">{order.otp}</p>
+                              <p className="text-xs text-green-700 mt-2">Show this code to kitchen staff when collecting your order</p>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleGenerateOTP(order.id)}
+                              disabled={generatingOTP === order.id}
+                              className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 disabled:opacity-50"
+                            >
+                              {generatingOTP === order.id ? 'Generating...' : 'Generate Pickup OTP'}
+                            </button>
+                          )}
+                        </div>
+                      )}
                       {order.status === 'Completed' && (
                         <button
                           onClick={() => handleDeleteOrder(order.id)}

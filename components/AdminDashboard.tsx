@@ -3,6 +3,7 @@ import { User, UserRole, Order, MenuItem, MenuCategory } from '../types';
 import { getAiRecommendation } from '../services/geminiService';
 import { apiService } from '../services/apiService';
 import Notification from './Notification';
+import AIInsights from './AIInsights';
 
 // --- Sub-components for each tab ---
 
@@ -492,56 +493,7 @@ const AnalyticsTab: React.FC<{ orders: Order[]; menu: MenuItem[] }> = ({ orders,
 };
 
 const AIInsightsTab: React.FC<{ orders: Order[]; menu: MenuItem[] }> = ({ orders, menu }) => {
-    const [isLoading, setIsLoading] = useState(false);
-    const [recommendation, setRecommendation] = useState('');
-
-    const handleGetRecommendation = async () => {
-        setIsLoading(true);
-        setRecommendation('');
-
-        const salesData = orders.flatMap(o => o.items).reduce((acc, item) => {
-            acc[item.name] = (acc[item.name] || 0) + item.quantity;
-            return acc;
-        }, {} as Record<string, number>);
-
-        const prompt = `
-            As an expert consultant for a university canteen in Bangladesh, analyze the following data and provide a strategic recommendation.
-
-            MENU:
-            ${JSON.stringify(menu, null, 2)}
-
-            SALES DATA (Item Name: Quantity Sold):
-            ${JSON.stringify(salesData, null, 2)}
-
-            REQUEST:
-            Based on the menu and sales data, recommend ONE specific item to feature as a "Special Offer" for the next week. Your goal is to increase overall student footfall and sales. Justify your choice with a brief, data-driven explanation.
-        `;
-
-        const result = await getAiRecommendation(prompt);
-        setRecommendation(result);
-        setIsLoading(false);
-    };
-
-    return (
-        <div>
-            <h3 className="text-xl font-semibold mb-4">AI-Powered Insights</h3>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h4 className="text-lg font-semibold">Get a Strategic Recommendation</h4>
-                <p className="text-gray-600 mb-4">Let our AI analyze your sales data and menu to suggest the next best move to boost your sales.</p>
-                <button onClick={handleGetRecommendation} disabled={isLoading} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400">
-                    {isLoading ? 'Analyzing...' : 'Generate Recommendation'}
-                </button>
-
-                {isLoading && <p className="mt-4">Getting recommendation from AI, please wait...</p>}
-                {recommendation && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                         <h5 className="font-bold mb-2">AI Recommendation:</h5>
-                         <p className="whitespace-pre-wrap">{recommendation}</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+    return <AIInsights menuItems={menu} userOrders={orders} />;
 };
 
 

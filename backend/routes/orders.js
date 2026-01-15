@@ -3,6 +3,11 @@ import Order from '../models/Order.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import mongoose from 'mongoose';
 
+// Function to generate a 5-digit OTP
+const generateOTP = () => {
+  return Math.floor(10000 + Math.random() * 90000).toString();
+};
+
 const router = express.Router();
 
 // Middleware to ensure database connection for serverless environments
@@ -118,9 +123,16 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id/status', authenticateToken, requireRole(['admin', 'kitchen']), async (req, res) => {
   try {
     const { status } = req.body;
+    const updateData = { status };
+
+    // Generate OTP if status is changing to 'Ready for Pickup'
+    if (status === 'Ready for Pickup') {
+      updateData.otp = generateOTP();
+    }
+
     const order = await Order.findByIdAndUpdate(
       req.params.id,
-      { status },
+      updateData,
       { new: true, runValidators: true }
     );
     if (!order) {
@@ -134,7 +146,8 @@ router.put('/:id/status', authenticateToken, requireRole(['admin', 'kitchen']), 
         orderId: order._id,
         status: order.status,
         userId: order.userId,
-        userName: order.userName
+        userName: order.userName,
+        otp: order.otp
       });
     }
 
@@ -164,6 +177,75 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     await Order.findByIdAndDelete(req.params.id);
     res.json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Generate OTP for user's order (users can generate/regenerate OTP for their 'Ready for Pickup' orders)
+router.post('/:id/generate-otp', authenticateToken, ensureConnection, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if user owns this order
+    if (order.userId.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'You can only generate OTP for your own orders' });
+    }
+
+    // Check if order is in 'Ready for Pickup' status
+    if (order.status !== 'Ready for Pickup') {
+      return res.status(400).json({ message: 'OTP can only be generated for orders ready for pickup' });
+    }
+
+    // Generate new OTP
+    const newOTP = generateOTP();
+    order.otp = newOTP;
+    await order.save();
+
+    res.json({ message: 'OTP generated successfully', otp: newOTP });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Verify OTP and complete order (kitchen staff only)
+router.post('/:id/verify-otp', authenticateToken, requireRole(['admin', 'kitchen']), async (req, res) => {
+  try {
+    const { otp } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if order is in 'Ready for Pickup' status
+    if (order.status !== 'Ready for Pickup') {
+      return res.status(400).json({ message: 'Order is not ready for pickup' });
+    }
+
+    // Verify OTP
+    if (order.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // Update order status to 'Completed'
+    order.status = 'Completed';
+    await order.save();
+
+    // Emit real-time update via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('orderStatusUpdate', {
+        orderId: order._id,
+        status: order.status,
+        userId: order.userId,
+        userName: order.userName
+      });
+    }
+
+    res.json({ message: 'Order completed successfully', order });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

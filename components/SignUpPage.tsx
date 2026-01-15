@@ -13,10 +13,37 @@ const SignUpPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>(UserRole.Student);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  const checkPasswordStrength = (pwd: string) => {
+    let strength = 'weak';
+    const suggestions: string[] = [];
+
+    if (pwd.length < 6) {
+      suggestions.push('Password must be at least 6 characters long.');
+    } else if (pwd.length >= 6 && pwd.length < 8) {
+      strength = 'medium';
+      if (!/[a-zA-Z]/.test(pwd)) suggestions.push('Include at least one letter.');
+      if (!/\d/.test(pwd)) suggestions.push('Include at least one number.');
+    } else {
+      strength = 'strong';
+    }
+
+    setPasswordStrength(strength);
+    setSuggestions(suggestions);
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (passwordStrength === 'weak') {
+      setError('Password must be at least medium strength.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -162,17 +189,67 @@ const SignUpPage: React.FC = () => {
                     <input
                       id="password-for-signup"
                       name="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white"
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white"
                       placeholder="Create a strong password"
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        checkPasswordStrength(e.target.value);
+                      }}
                     />
-                    <svg className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
+                    <button
+                      type="button"
+                      className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      ) : (
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
+                  {password && (
+                    <div className="mt-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              passwordStrength === 'weak' ? 'bg-red-500 w-1/3' :
+                              passwordStrength === 'medium' ? 'bg-yellow-500 w-2/3' :
+                              'bg-green-500 w-full'
+                            }`}
+                          ></div>
+                        </div>
+                        <span className={`text-sm font-medium ${
+                          passwordStrength === 'weak' ? 'text-red-600' :
+                          passwordStrength === 'medium' ? 'text-yellow-600' :
+                          'text-green-600'
+                        }`}>
+                          {passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}
+                        </span>
+                      </div>
+                      {suggestions.length > 0 && (
+                        <ul className="mt-2 text-sm text-gray-600">
+                          {suggestions.map((suggestion, index) => (
+                            <li key={index} className="flex items-center">
+                              <svg className="w-4 h-4 text-red-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                              {suggestion}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

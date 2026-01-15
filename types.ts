@@ -54,4 +54,5 @@ export interface Order {
   totalPrice: number;
   status: 'Pending' | 'Preparing' | 'Ready for Pickup' | 'Completed';
   timestamp: string;
+  otp?: string;
 }

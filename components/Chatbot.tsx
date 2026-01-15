@@ -1,8 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage } from '../types';
-import { sendMessageToBot, startChat } from '../services/geminiService';
-import type { Chat } from '@google/genai';
+import { ChatMessage, MenuItem } from '../types';
+import { sendMessageToBot, startChat, isApiKeyAvailable } from '../services/geminiService';
+import { apiService } from '../services/apiService';
+
 
 interface ChatbotProps {
   onClose: () => void;
@@ -10,26 +10,42 @@ interface ChatbotProps {
 
 const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: 'Hi! I\'m the canteen assistant. How can I help you today? Ask me about the menu, hours, or specials!' }
+    {
+      role: 'model',
+      text: 'Hi! I\'m the canteen assistant. How can I help you today? Ask me about the menu, orders, or specials!'
+    }
   ]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const chatSession = useRef<Chat | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const chatSession = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Load menu items for better context
   useEffect(() => {
-    // Initialize the chat session when the component mounts
-    try {
-      chatSession.current = startChat();
-    } catch (error) {
-      console.error("Failed to initialize chat session:", error);
-      // Show error message in chat
-      setMessages(prev => [...prev, {
-        role: 'model',
-        text: 'Sorry, the AI assistant is currently unavailable. Please try again later.'
-      }]);
-    }
+    const loadMenu = async () => {
+      try {
+        const menu = await apiService.getMenu();
+        setMenuItems(menu);
+      } catch (error) {
+        console.error('Failed to load menu for chatbot:', error);
+      }
+    };
+    loadMenu();
   }, []);
+
+  // Initialize chat session lazily when first message is sent
+  const initializeChat = () => {
+    if (!chatSession.current) {
+      try {
+        chatSession.current = startChat();
+      } catch (error) {
+        console.error("Failed to initialize chat session:", error);
+        return false;
+      }
+    }
+    return true;
+  };
 
   useEffect(() => {
     // Scroll to the bottom whenever messages change
@@ -46,7 +62,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
     setIsLoading(true);
 
     try {
-      const botResponseText = await sendMessageToBot(userMessage.text);
+      // Enhance the message with current menu context
+      const enhancedMessage = `${userInput.trim()}\n\nCurrent menu context: ${JSON.stringify(menuItems.slice(0, 5))}`;
+
+      const botResponseText = await sendMessageToBot(enhancedMessage);
       const botMessage: ChatMessage = { role: 'model', text: botResponseText };
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {

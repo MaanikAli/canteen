@@ -10,6 +10,8 @@ interface KitchenDashboardProps {
 
 const KitchenDashboard: React.FC<KitchenDashboardProps> = ({ orders, setOrders }) => {
   const [loading, setLoading] = useState<string | null>(null);
+  const [otpInputs, setOtpInputs] = useState<{ [key: string]: string }>({});
+  const [otpErrors, setOtpErrors] = useState<{ [key: string]: string }>({});
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     setLoading(orderId);
@@ -23,6 +25,28 @@ const KitchenDashboard: React.FC<KitchenDashboardProps> = ({ orders, setOrders }
     } catch (error) {
       console.error('Failed to update order status:', error);
       alert('Failed to update order status. Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const verifyOTPAndComplete = async (orderId: string) => {
+    const enteredOTP = otpInputs[orderId];
+    if (!enteredOTP) return;
+
+    setLoading(orderId);
+    try {
+      await apiService.verifyOTP(orderId, enteredOTP);
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId ? { ...order, status: 'Completed' } : order
+        )
+      );
+      // Clear the OTP input after successful verification
+      setOtpInputs(prev => ({ ...prev, [orderId]: '' }));
+    } catch (error) {
+      console.error('Failed to verify OTP:', error);
+      alert('Invalid OTP. Please try again.');
     } finally {
       setLoading(null);
     }
@@ -70,14 +94,24 @@ const KitchenDashboard: React.FC<KitchenDashboardProps> = ({ orders, setOrders }
                           {loading === order.id ? 'Updating...' : 'Mark as Ready'}
                         </button>
                       )}
-                       {status === 'Ready for Pickup' && (
-                        <button
-                          onClick={() => updateOrderStatus(order.id, 'Completed')}
-                          disabled={loading === order.id}
-                          className="w-full bg-blue-500 text-white p-2 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {loading === order.id ? 'Updating...' : 'Complete Order'}
-                        </button>
+                      {status === 'Ready for Pickup' && (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Enter OTP"
+                            value={otpInputs[order.id] || ''}
+                            onChange={(e) => setOtpInputs(prev => ({ ...prev, [order.id]: e.target.value }))}
+                            className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            maxLength={5}
+                          />
+                          <button
+                            onClick={() => verifyOTPAndComplete(order.id)}
+                            disabled={loading === order.id || !otpInputs[order.id]}
+                            className="w-full bg-blue-500 text-white p-2 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {loading === order.id ? 'Verifying...' : 'Verify OTP & Complete'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

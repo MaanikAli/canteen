@@ -18,10 +18,11 @@ import ProfilePage from './components/ProfilePage';
 import OrderHistory from './components/OrderHistory';
 import Cart from './components/Cart';
 import PaymentPage from './components/PaymentPage';
-
+import NotificationCenter from './components/NotificationCenter';
 
 import { CartItem, MenuItem, User, UserRole, Order } from './types';
 import { apiService } from './services/apiService';
+import { notificationService } from './services/notificationService';
 
 
 // A helper to get data from localStorage
@@ -104,7 +105,7 @@ const App: React.FC = () => {
   const [canteenName, setCanteenName] = useLocalStorage<string>('canteenName', 'Green University Canteen');
   const [logoUrl, setLogoUrl] = useLocalStorage<string>('logoUrl', '');
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [notifications, setNotifications] = useState<{id: string, message: string, type: 'success' | 'info' | 'warning'}[]>([]);
+  const [appNotifications, setAppNotifications] = useState<any[]>([]);
 
   // Initialize apiService token on app start if user is logged in
   React.useEffect(() => {
@@ -117,46 +118,31 @@ const App: React.FC = () => {
     }
   }, [currentUser]);
 
-  // Socket.IO connection
+  // Socket.IO connection and notification setup
   useEffect(() => {
     const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
     const newSocket = io(socketUrl);
     setSocket(newSocket);
 
-    newSocket.on('orderStatusUpdate', async (data) => {
-      const { orderId, status, userId, userName } = data;
+    // Subscribe to notification service
+    const unsubscribe = notificationService.subscribe((notifications) => {
+      setAppNotifications(notifications);
+    });
 
-      // Re-fetch orders to ensure instant update
-      try {
-        const ordersData = await apiService.getOrders();
-        setOrders(ordersData);
-      } catch (error) {
-        console.error('Failed to refresh orders:', error);
-      }
+    newSocket.on('orderStatusUpdate', (data) => {
+      const { orderId, status, userId, userName, otp } = data;
 
-      // Show notification to customers only for status updates
-      if (currentUser && currentUser.id === userId) {
-        const statusMessages = {
-          'Preparing': `Your order is now being prepared!`,
-          'Ready for Pickup': `Your order is ready for pickup!`,
-          'Completed': `Your order has been completed!`
-        };
+      // Update the specific order in state
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId
+            ? { ...order, status, otp }
+            : order
+        )
+      );
 
-        const message = statusMessages[status as keyof typeof statusMessages] || `Order status updated to ${status}`;
-
-        const notification = {
-          id: Date.now().toString(),
-          message,
-          type: 'info' as const
-        };
-
-        setNotifications(prev => [...prev, notification]);
-
-        // Auto-remove notification after 5 seconds
-        setTimeout(() => {
-          setNotifications(prev => prev.filter(n => n.id !== notification.id));
-        }, 5000);
-      }
+      // Use notification service for order updates
+      notificationService.notifyOrderUpdate(orderId, status, userName, userId, currentUser?.id);
     });
 
     newSocket.on('newOrder', async (data) => {
@@ -168,25 +154,13 @@ const App: React.FC = () => {
         console.error('Failed to refresh orders for new order:', error);
       }
 
-      // Show notification to admin and kitchen staff
-      if (currentUser && (currentUser.role === "admin" || currentUser.role === "kitchen")) {
-        const notification = {
-          id: Date.now().toString(),
-          message: `New order received from ${data.userName}!`,
-          type: 'success' as const
-        };
-
-        setNotifications(prev => [...prev, notification]);
-
-        // Auto-remove notification after 5 seconds
-        setTimeout(() => {
-          setNotifications(prev => prev.filter(n => n.id !== notification.id));
-        }, 5000);
-      }
+      // Use notification service for new orders
+      notificationService.notifyNewOrder(data.userName, currentUser?.role);
     });
 
     return () => {
       newSocket.close();
+      unsubscribe();
     };
   }, [currentUser]);
 
@@ -412,28 +386,22 @@ const App: React.FC = () => {
 
         {showOrderSuccess && <OrderSuccessNotification onClose={() => setShowOrderSuccess(false)} />}
 
-        {/* Real-time Notifications */}
-        {notifications.map(notification => (
-          <div
-            key={notification.id}
-            className={`fixed top-5 right-5 p-4 rounded-lg shadow-lg z-50 flex items-center gap-3 animate-fade-in-down ${
-              notification.type === 'success' ? 'bg-green-500 text-white' :
-              notification.type === 'warning' ? 'bg-yellow-500 text-black' :
-              'bg-blue-500 text-white'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{notification.message}</span>
-            <button
-              onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
-              className="ml-4 font-bold"
-            >
-              &times;
-            </button>
-          </div>
-        ))}
+        {/* Advanced Notification Center */}
+        {currentUser && (
+          <NotificationCenter
+            notifications={appNotifications}
+            onMarkAsRead={(id) => notificationService.markAsRead(id)}
+            onMarkAllAsRead={() => notificationService.markAllAsRead()}
+            onDelete={(id) => notificationService.deleteNotification(id)}
+            onClearAll={() => notificationService.clearAll()}
+            onNotificationClick={(notification) => {
+              // Handle notification click - could navigate to specific pages
+              if (notification.actionUrl) {
+                window.location.href = notification.actionUrl;
+              }
+            }}
+          />
+        )}
       </div>
     </BrowserRouter>
   );

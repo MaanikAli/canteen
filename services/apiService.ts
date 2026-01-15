@@ -166,6 +166,19 @@ class ApiService {
     });
   }
 
+  async generateOTP(orderId: string) {
+    return this.request(`/orders/${orderId}/generate-otp`, {
+      method: 'POST',
+    });
+  }
+
+  async verifyOTP(orderId: string, otp: string) {
+    return this.request(`/orders/${orderId}/verify-otp`, {
+      method: 'POST',
+      body: JSON.stringify({ otp }),
+    });
+  }
+
   // Settings API
   async getSettings() {
     return this.request('/settings');
