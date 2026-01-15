@@ -9,7 +9,7 @@ const Footer: React.FC = () => {
           <div className="text-center md:text-left mb-4 md:mb-0">
             <h2 className="text-xl font-bold">Green University Canteen</h2>
             <p className="text-gray-400">Purbachal American City, Kanchan, Rupganj, Narayanganj-1461, Dhaka, Bangladesh</p>
-            <p className="text-gray-400">Open Mon-Fri, 8 AM - 6 PM</p>
+            <p className="text-gray-400">Open Mon-Fri, 08 AM - 05 PM</p>
           </div>
           <div className="text-center">
             <p>&copy; {new Date().getFullYear()} Green University Canteen. All Rights Reserved.</p>
